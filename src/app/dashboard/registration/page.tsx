@@ -38,6 +38,7 @@ export default function RegistrationPage() {
     const [year, setYear] = useState<string | null>(null);
 
     const [registrations, setRegistrations] = useState<Registration[]>([]);
+    const [allAgencies, setAllAgencies] = useState<BloodBank[]>([]);
     const [agencies, setAgencies] = useState<BloodBank[]>([]);
     const [stats, setStats] = useState({ registered: 0, accepted: 0, rejected: 0, donated: 0, limit: 0 });
     const [agencyCounts, setAgencyCounts] = useState<{[key: string]: number}>({});
@@ -60,8 +61,10 @@ export default function RegistrationPage() {
         setRegistrations(campRegistrations);
         setNextRegId(generateRegistrationId(allRegistrations));
 
-        const allAgencies: BloodBank[] = JSON.parse(sessionStorage.getItem('bloodBanks') || '[]');
-        const campAgencies = allAgencies.filter(b => b.location === loc && (b.year === campYear || b.year.toString() === yr));
+        const allAgenciesData: BloodBank[] = JSON.parse(sessionStorage.getItem('bloodBanks') || '[]');
+        setAllAgencies(allAgenciesData);
+        
+        const campAgencies = allAgenciesData.filter(b => b.location === loc && (b.year === campYear || b.year.toString() === yr));
         setAgencies(campAgencies);
 
         const limit = campAgencies.reduce((sum, bank) => sum + bank.quota, 0);
@@ -103,7 +106,7 @@ export default function RegistrationPage() {
             const yearToSave = '2025-26';
 
             if (isEditing && selectedRegistration) {
-                 updatedRegistrations = allRegistrations.map(r => r.id === selectedRegistration.id ? { ...selectedRegistration, ...formState, year: yearToSave } : r);
+                 updatedRegistrations = allRegistrations.map(r => r.id === selectedRegistration.id ? { ...selectedRegistration, ...formState, year: yearToSave, location: location } : r);
             } else {
                 const newReg: Registration = {
                     id: nextRegId,
@@ -251,7 +254,7 @@ export default function RegistrationPage() {
                                             <SelectValue placeholder="Select Agency" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {agencies.map(a => <SelectItem key={a.id} value={a.name}>{a.name}</SelectItem>)}
+                                            {allAgencies.map(a => <SelectItem key={a.id} value={a.name}>{a.name}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -347,5 +350,3 @@ export default function RegistrationPage() {
         </div>
     );
 }
-
-    
