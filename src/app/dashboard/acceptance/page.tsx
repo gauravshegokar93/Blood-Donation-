@@ -49,7 +49,7 @@ export default function AcceptancePage() {
         allRegistrations[registrationIndex].status = 'ACCEPTED';
         sessionStorage.setItem('registrations', JSON.stringify(allRegistrations));
         
-        alert(`Registration ID "${regId}" has been accepted.`);
+        alert(`Registration ID "${regId}" has been accepted. The dashboard statistics will be updated.`);
         setRegistrationId(''); // Reset input
     };
     

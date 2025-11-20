@@ -63,7 +63,7 @@ export default function RejectionPage() {
         // allRegistrations[registrationIndex].rejectionReason = reason; 
         sessionStorage.setItem('registrations', JSON.stringify(allRegistrations));
         
-        alert(`Registration ID "${registrationId}" has been rejected. Reason: ${reason}`);
+        alert(`Registration ID "${registrationId}" has been rejected. Reason: ${reason}. The dashboard statistics will be updated.`);
         setRegistrationId(''); 
         setReason('');
     };
