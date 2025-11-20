@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BloodBank Management System</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+    <header class="main-header">
+        <div class="logo">
+            <h2 style="color: var(--primary-color)">Blood Donation Camp</h2>
+        </div>
+        <nav class="main-nav">
+            <ul>
+                <li class="dropdown">
+                    <a class="nav-link">BDC</a>
+                    <div class="dropdown-content">
+                        <a class="nav-link" data-view="dashboard">Dashboard</a>
+                    </div>
+                </li>
+                <li><a class="nav-link" data-view="bloodBank">Blood Bank</a></li>
+                <li><a class="nav-link" data-view="registration">Registration</a></li>
+                <li><a class="nav-link" data-view="acceptance">Acceptance</a></li>
+                <li><a class="nav-link" data-view="rejection">Rejection</a></li>
+                <li class="dropdown">
+                    <a class="nav-link">Report</a>
+                    <div class="dropdown-content">
+                        <a class="nav-link" data-view="reportStatusAll">BDC Status - All</a>
+                        <a class="nav-link" data-view="reportStatusLocation">BDC Status - Location</a>
+                        <a class="nav-link" data-view="reportHistory">BDC History</a>
+                    </div>
+                </li>
+                <li><a id="exit-btn">Exit</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main id="main-content" class="container"></main>
+
+    <!-- ========= View Templates ========= -->
+
+    <!-- Dashboard View -->
+    <template id="dashboard-view-template">
+         <div id="report-status-location-view" class="view-section">
+            <div class="view-header">
+                <h1 class="view-title" id="dashboard-title">Dashboard</h1>
+            </div>
+            <div id="dashboard-content">
+                <div class="stats-panel" id="dashboard-stats-panel" style="justify-content: flex-start;">
+                    <!-- Stats will be loaded here -->
+                </div>
+                <div class="report-grid">
+                    <div class="chart-container">
+                        <canvas id="dashboard-pie-chart"></canvas>
+                    </div>
+                    <div id="dashboard-banks-table-container">
+                        <!-- Blood banks table will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Blood Bank View -->
+    <template id="bloodBank-view-template">
+        <section id="blood-bank-view" class="view-section">
+            <div class="view-header">
+                <h1 class="view-title">Blood Bank Management</h1>
+            </div>
+            <div class="action-buttons">
+                <button id="bb-new-btn" class="btn btn-primary">New</button>
+                <button id="bb-edit-btn" class="btn btn-secondary">Edit</button>
+                <button id="bb-delete-btn" class="btn btn-danger">Delete</button>
+                <button id="bb-cancel-btn" class="btn btn-secondary">Cancel</button>
+            </div>
+            <form id="blood-bank-form">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="bb-id">Sr No</label>
+                        <input type="text" id="bb-id" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="bb-name">Blood Bank / Agency Name</label>
+                        <input type="text" id="bb-name" required>
+                    </div>
+                     <div class="form-group">
+                        <label for="bb-location">BDC Location</label>
+                        <input type="text" id="bb-location" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="bb-counter">Counter No</label>
+                        <input type="number" id="bb-counter">
+                    </div>
+                    <div class="form-group">
+                        <label for="bb-quota">Quota / Limit</label>
+                        <input type="number" id="bb-quota">
+                    </div>
+                </div>
+                 <button type="submit" id="bb-save-btn" class="btn btn-primary">Save</button>
+            </form>
+            <table id="blood-bank-table" class="data-table">
+                <thead>
+                    <tr>
+                        <th>SrNo</th>
+                        <th>Agency Name</th>
+                        <th>Counter No</th>
+                        <th>Limit</th>
+                        <th>Location</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Data will be populated by JS -->
+                </tbody>
+            </table>
+        </section>
+    </template>
+    
+    <!-- Registration View -->
+    <template id="registration-view-template">
+        <section id="registration-view">
+             <div class="view-header">
+                <h1 class="view-title">Donor Registration</h1>
+            </div>
+            <div id="registration-view-layout">
+                <div id="registration-form-section" class="view-section">
+                    <form id="registration-form">
+                        <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+                             <div class="form-group">
+                                <label for="reg-id">Sr No</label>
+                                <input type="text" id="reg-id" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="reg-agency">Agency</label>
+                                <select id="reg-agency" required></select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="reg-name">Name</label>
+                            <input type="text" id="reg-name" required>
+                        </div>
+                        <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+                            <div class="form-group">
+                                <label for="reg-blood-group">Blood Group</label>
+                                <select id="reg-blood-group" required>
+                                    <option value="A+">A+</option>
+                                    <option value="A-">A-</option>
+                                    <option value="B+">B+</option>
+                                    <option value="B-">B-</option>
+                                    <option value="AB+">AB+</option>
+                                    <option value="AB-">AB-</option>
+                                    <option value="O+">O+</option>
+                                    <option value="O-">O-</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="reg-mobile">Mobile No.</label>
+                                <input type="text" id="reg-mobile" required pattern="\\d{10}">
+                            </div>
+                        </div>
+                        <p style="margin-bottom: 1rem; color: var(--accent-color);">Press Enter or click Add to save.</p>
+                        <button type="submit" class="btn btn-primary">ADD</button>
+                    </form>
+                </div>
+
+                <div id="registration-stats-section">
+                     <div class="stats-panel" id="reg-stats-panel">
+                        <!-- Stats will be loaded here -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="view-section">
+                 <table id="registration-table" class="data-table">
+                    <thead>
+                        <tr>
+                            <th class="sortable" data-sort="Id">SrNo</th>
+                            <th class="sortable" data-sort="Name">Name</th>
+                            <th class="sortable" data-sort="BloodGroup">Blood Group</th>
+                            <th class="sortable" data-sort="MobileNo">Mobile No.</th>
+                            <th class="sortable" data-sort="AgencyName">Agency</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+        </section>
+    </template>
+    
+    <!-- Acceptance View -->
+    <template id="acceptance-view-template">
+        <section id="acceptance-view" class="view-section">
+            <div id="acceptance-view-content">
+                <h1 class="view-title">Accept Donor</h1>
+                <form id="acceptance-form">
+                    <div class="form-group">
+                        <label for="accept-reg-no">Registered No.</label>
+                        <input type="number" id="accept-reg-no" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Accept</button>
+                </form>
+                <p id="acceptance-message" style="margin-top: 1rem;"></p>
+            </div>
+        </section>
+    </template>
+
+    <!-- Rejection View -->
+    <template id="rejection-view-template">
+         <section id="rejection-view" class="view-section">
+            <div id="rejection-view-content">
+                <h1 class="view-title">Reject Donor</h1>
+                <form id="rejection-form">
+                    <div class="form-group">
+                        <label for="reject-reg-no">Registered No.</label>
+                        <input type="number" id="reject-reg-no" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reject-reason">Rejection Reason</label>
+                         <select id="reject-reason" required>
+                            <option value="Low Hemoglobin">Low Hemoglobin</option>
+                            <option value="High BP">High BP</option>
+                             <option value="Low BP">Low BP</option>
+                            <option value="Underweight">Underweight</option>
+                            <option value="Recent Illness">Recent Illness</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-danger">Reject</button>
+                </form>
+                 <p id="rejection-message" style="margin-top: 1rem;"></p>
+            </div>
+        </section>
+    </template>
+    
+    <!-- Report: BDC Status All -->
+    <template id="reportStatusAll-view-template">
+        <section id="report-status-all-view" class="view-section">
+            <div class="view-header">
+                <h1 class="view-title">BDC Status - All Locations</h1>
+            </div>
+            <div id="report-status-all-content">
+                <table id="report-status-all-table" class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Location</th>
+                            <th>Year</th>
+                            <th>Registered</th>
+                            <th>Accepted</th>
+                            <th>Rejected</th>
+                            <th>Donated</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>>
+                </table>
+                 <div class="chart-container">
+                    <canvas id="report-status-all-chart"></canvas>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <!-- Report: BDC Status Location -->
+    <template id="reportStatusLocation-view-template">
+        <section id="report-status-location-view" class="view-section">
+            <div class="view-header">
+                <h1 class="view-title">BDC Status - Location-wise</h1>
+            </div>
+            <div class="form-grid" style="max-width: 600px; margin-bottom: 2rem;">
+                <div class="form-group">
+                    <label for="report-location-select">Location</label>
+                    <select id="report-location-select"></select>
+                </div>
+                <div class="form-group">
+                    <label for="report-year-select">Year</label>
+                    <select id="report-year-select"></select>
+                </div>
+            </div>
+            <div id="report-location-content">
+                <div class="stats-panel" id="report-location-stats-panel" style="justify-content: flex-start;"></div>
+                <div class="report-grid">
+                    <div class="chart-container">
+                        <canvas id="report-location-pie-chart"></canvas>
+                    </div>
+                     <div id="report-location-banks-table-container"></div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <!-- Report: BDC History -->
+    <template id="reportHistory-view-template">
+        <section id="report-history-view" class="view-section">
+            <div class="view-header">
+                <h1 class="view-title">BDC History</h1>
+            </div>
+            <div id="report-history-content">
+                 <table id="report-history-table" class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Year</th>
+                            <th>Location</th>
+                            <th>Total Camps</th>
+                            <th>Total Registered</th>
+                            <th>Total Donated</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>>
+                </table>
+                 <div class="chart-container">
+                    <canvas id="report-history-chart"></canvas>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <!-- Scripts -->
+    <script src="/js/main.js"></script>
+    <script src="/js/bloodBank.js"></script>
+    <script src="/js/registration.js"></script>
+    <script src="/js/acceptance.js"></script>
+    <script src="/js/rejection.js"></script>
+    <script src="/js/reports.js"></script>
+
+</body>
+</html>
