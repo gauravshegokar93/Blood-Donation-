@@ -92,17 +92,6 @@ export default function RegistrationPage() {
         setLocation(savedLocation);
         setYear(savedYear);
         loadDataForCamp(savedLocation, savedYear);
-
-        const handleFocus = () => {
-            console.log('Page focused, reloading data.');
-            loadDataForCamp(savedLocation, savedYear);
-        };
-        
-        window.addEventListener('focus', handleFocus);
-        return () => {
-            window.removeEventListener('focus', handleFocus);
-        };
-
     }, [router]);
     
     const handleSaveRegistration = (e: React.FormEvent) => {
