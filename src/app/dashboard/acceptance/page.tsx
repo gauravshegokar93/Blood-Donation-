@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Registration } from '@/lib/mock-data';
 
 export default function AcceptancePage() {
     const router = useRouter();
@@ -26,13 +27,30 @@ export default function AcceptancePage() {
     
     const handleAccept = (e: React.FormEvent) => {
         e.preventDefault();
-        // TODO: Add validation and API call logic
-        if(registrationId) {
-            alert(`Registration ID "${registrationId}" has been accepted.`);
-            setRegistrationId(''); // Reset input
-        } else {
-            alert('Please enter a Registration ID.');
+        const regId = parseInt(registrationId, 10);
+        if (!regId || !location || !year) {
+            alert('Please enter a valid Registration ID.');
+            return;
         }
+
+        const allRegistrations: Registration[] = JSON.parse(sessionStorage.getItem('registrations') || '[]');
+        const registrationIndex = allRegistrations.findIndex(r => r.id === regId && r.location === location && r.year === parseInt(year));
+
+        if (registrationIndex === -1) {
+            alert(`Registration ID "${regId}" not found for this camp.`);
+            return;
+        }
+        
+        if(allRegistrations[registrationIndex].status !== 'REGISTERED') {
+            alert(`Registration ID "${regId}" cannot be accepted. Current status: ${allRegistrations[registrationIndex].status}.`);
+            return;
+        }
+        
+        allRegistrations[registrationIndex].status = 'ACCEPTED';
+        sessionStorage.setItem('registrations', JSON.stringify(allRegistrations));
+        
+        alert(`Registration ID "${regId}" has been accepted.`);
+        setRegistrationId(''); // Reset input
     };
     
     if (!location || !year) {

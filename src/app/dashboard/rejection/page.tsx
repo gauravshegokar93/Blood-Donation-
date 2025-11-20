@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Registration } from '@/lib/mock-data';
 
 const rejectionReasons = [
     "Low Hemoglobin",
@@ -38,13 +39,33 @@ export default function RejectionPage() {
     
     const handleReject = (e: React.FormEvent) => {
         e.preventDefault();
-        if(registrationId && reason) {
-            alert(`Registration ID "${registrationId}" has been rejected. Reason: ${reason}`);
-            setRegistrationId(''); 
-            setReason('');
-        } else {
+        const regId = parseInt(registrationId, 10);
+        if (!regId || !reason || !location || !year) {
             alert('Please enter a Registration ID and select a reason.');
+            return;
         }
+
+        const allRegistrations: Registration[] = JSON.parse(sessionStorage.getItem('registrations') || '[]');
+        const registrationIndex = allRegistrations.findIndex(r => r.id === regId && r.location === location && r.year === parseInt(year));
+
+        if (registrationIndex === -1) {
+            alert(`Registration ID "${regId}" not found for this camp.`);
+            return;
+        }
+        
+        if(allRegistrations[registrationIndex].status !== 'REGISTERED') {
+            alert(`Registration ID "${regId}" cannot be rejected. Current status: ${allRegistrations[registrationIndex].status}.`);
+            return;
+        }
+        
+        allRegistrations[registrationIndex].status = 'REJECTED';
+        // In a real app, we'd save the rejection reason as well.
+        // allRegistrations[registrationIndex].rejectionReason = reason; 
+        sessionStorage.setItem('registrations', JSON.stringify(allRegistrations));
+        
+        alert(`Registration ID "${registrationId}" has been rejected. Reason: ${reason}`);
+        setRegistrationId(''); 
+        setReason('');
     };
     
     if (!location || !year) {
