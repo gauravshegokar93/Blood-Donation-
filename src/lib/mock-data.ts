@@ -16,6 +16,8 @@ export interface Registration {
     location: string;
     year: number | string;
     status: 'REGISTERED' | 'ACCEPTED' | 'REJECTED' | 'DONATED';
+    rejectionReason?: string;
+    rejectionDate?: string;
 }
 
 const initialBloodBanks: BloodBank[] = [
@@ -39,12 +41,12 @@ const initialRegistrations: Registration[] = [
     { id: 'REG-20240115-0003', name: 'Rohan Patil', bloodGroup: 'B+', mobile: '9876543212', agency: 'YCM BLOOD BANK', location: 'Pune', year: 2024, status: 'DONATED' },
     // Mumbai 2024
     { id: 'REG-20240220-0001', name: 'Amit Sharma', bloodGroup: 'O+', mobile: '9876543210', status: 'ACCEPTED', agency: 'City General Blood Bank', location: 'Mumbai', year: 2024 },
-    { id: 'REG-20240220-0002', name: 'Priya Singh', bloodGroup: 'A+', mobile: '9876543211', status: 'REJECTED', agency: 'City General Blood Bank', location: 'Mumbai', year: 2024 },
+    { id: 'REG-20240220-0002', name: 'Priya Singh', bloodGroup: 'A+', mobile: '9876543211', status: 'REJECTED', agency: 'City General Blood Bank', location: 'Mumbai', year: 2024, rejectionReason: 'Low Hemoglobin', rejectionDate: '2024-02-20' },
     // Mumbai 2023
     { id: 'REG-20231110-0001', name: 'Vikram Rathod', bloodGroup: 'B-', mobile: '7654321098', status: 'DONATED', agency: 'LifeLine Blood Services', location: 'Mumbai', year: 2023 },
 ];
 
-export function initializeMockData(location: string, year: number) {
+export function initializeMockData(location: string, year: number | string) {
     if (!sessionStorage.getItem('initialized')) {
         sessionStorage.setItem('bloodBanks', JSON.stringify(initialBloodBanks));
         sessionStorage.setItem('registrations', JSON.stringify(initialRegistrations));
