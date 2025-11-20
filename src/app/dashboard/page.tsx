@@ -1,9 +1,10 @@
 'use client';
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Droplets, Users, BarChart, Calendar, LogOut, Menu, X, Home, Banknote, UserPlus, CheckCircle, XCircle, FileText } from 'lucide-react';
+import { Droplets, Users, BarChart, Calendar, LogOut, Menu, X, Banknote, UserPlus, CheckCircle, XCircle, FileText } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import Link from "next/link";
 
 export default function Dashboard() {
     const router = useRouter();
@@ -49,8 +50,8 @@ export default function Dashboard() {
                     </div>
                 </div>
                 <nav className="hidden md:flex items-center space-x-4">
-                    <a href="/home" className="hover:underline">Home</a>
-                    <a href="/dashboard" className="font-bold hover:underline">Dashboard</a>
+                    <Link href="/home" className="hover:underline">Home</Link>
+                    <Link href="/dashboard" className="font-bold hover:underline">Dashboard</Link>
                     <button onClick={handleLogout} className="flex items-center space-x-1 hover:underline">
                         <LogOut className="h-4 w-4"/>
                         <span>Exit</span>
@@ -67,8 +68,8 @@ export default function Dashboard() {
         {isMenuOpen && (
             <div className="md:hidden bg-primary text-primary-foreground p-4">
                 <nav className="flex flex-col space-y-2">
-                    <a href="/home" className="hover:underline">Home</a>
-                    <a href="/dashboard" className="font-bold hover:underline">Dashboard</a>
+                    <Link href="/home" className="hover:underline">Home</Link>
+                    <Link href="/dashboard" className="font-bold hover:underline">Dashboard</Link>
                     <button onClick={handleLogout} className="flex items-center space-x-1 hover:underline">
                         <LogOut className="h-4 w-4"/>
                         <span>Exit</span>
@@ -81,10 +82,10 @@ export default function Dashboard() {
             <aside className="w-64 bg-white border-r p-4 hidden lg:block">
                  <h2 className="text-lg font-bold mb-4">Menu</h2>
                  <nav className="flex flex-col space-y-2">
-                    <a href="#" className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-100"><Banknote className="h-5 w-5"/><span>Blood Bank</span></a>
-                    <a href="#" className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-100"><UserPlus className="h-5 w-5"/><span>Registration</span></a>
-                    <a href="#" className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-100"><CheckCircle className="h-5 w-5"/><span>Acceptance</span></a>
-                    <a href="#" className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-100"><XCircle className="h-5 w-5"/><span>Rejection</span></a>
+                    <Link href="/dashboard/blood-bank" className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-100"><Banknote className="h-5 w-5"/><span>Blood Bank</span></Link>
+                    <Link href="#" className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-100"><UserPlus className="h-5 w-5"/><span>Registration</span></Link>
+                    <Link href="#" className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-100"><CheckCircle className="h-5 w-5"/><span>Acceptance</span></Link>
+                    <Link href="#" className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-100"><XCircle className="h-5 w-5"/><span>Rejection</span></Link>
                     <div className="relative">
                         <a href="#" className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-100"><FileText className="h-5 w-5"/><span>Reports</span></a>
                     </div>
