@@ -10,34 +10,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { PlusCircle, Edit, Trash2, Printer, Ban, X } from 'lucide-react';
-
-// Mock data, will be replaced with API calls
-const mockBloodBanks = [
-  { id: 1, name: 'AFMC BLOOD BANK', location: 'PUNE', counter: 2, quota: 350 },
-  { id: 2, name: 'SAHYADRI BLOOD BANK', location: 'PUNE', counter: 6, quota: 350 },
-  { id: 3, name: 'YCM BLOOD BANK', location: 'PUNE', counter: 1, quota: 350 },
-  { id: 4, name: 'PSI BLOOD BANK', location: 'PUNE', counter: 5, quota: 350 },
-  { id: 5, name: 'SASOON BLOOD BANK', location: 'PUNE', counter: 3, quota: 350 },
-  { id: 6, name: 'DY PATIL BLOOD BANK', location: 'PUNE', counter: 4, quota: 350 },
-  { id: 7, name: 'UTTRAKHAND', location: 'UTTRAKHAND', counter: 7, quota: 200 },
-  { id: 8, name: 'RADHA LAWN SHEGAON', location: 'SHEGAON', counter: 11, quota: 350 },
-  { id: 9, name: 'SDM COLLEGE DHARWAD', location: 'DHARWAD', counter: 9, quota: 300 },
-  { id: 10, name: 'CIVIL HOSPITAL DHARWAD', location: 'DHARWAD', counter: 10, quota: 300 },
-];
+import { BloodBank } from '@/lib/mock-data';
 
 const locations = ['PUNE', 'UTTRAKHAND', 'SHEGAON', 'DHARWAD', 'Mumbai', 'Nagpur'];
 
 export default function BloodBankPage() {
   const router = useRouter();
-  const [bloodBanks, setBloodBanks] = useState(mockBloodBanks);
-  const [selectedBank, setSelectedBank] = useState<any>(null);
+  const [bloodBanks, setBloodBanks] = useState<BloodBank[]>([]);
+  const [selectedBank, setSelectedBank] = useState<BloodBank | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [location, setLocation] = useState<string | null>(null);
   const [year, setYear] = useState<string | null>(null);
-  const [formState, setFormState] = useState<any>({ id: null, name: '', location: '', counter: '', quota: '' });
   
-  const initialFormState = { id: null, name: '', location: '', counter: '', quota: '' };
+  const initialFormState: Omit<BloodBank, 'id'> = { name: '', location: '', counter: 0, quota: 0, year: 0 };
+  const [formState, setFormState] = useState<Partial<BloodBank>>(initialFormState);
 
   useEffect(() => {
     const savedLocation = sessionStorage.getItem('bdcLocation');
@@ -47,14 +34,23 @@ export default function BloodBankPage() {
     } else {
       setLocation(savedLocation);
       setYear(savedYear);
-      setFormState((prev:any) => ({ ...prev, location: savedLocation }));
-      initialFormState.location = savedLocation;
+      const allBanks: BloodBank[] = JSON.parse(sessionStorage.getItem('bloodBanks') || '[]');
+      setBloodBanks(allBanks.filter(b => b.location === savedLocation && b.year === parseInt(savedYear, 10)));
+      setFormState(prev => ({ ...prev, location: savedLocation, year: parseInt(savedYear, 10) }));
     }
   }, [router]);
+
+  const updateSessionStorage = (updatedBanks: BloodBank[]) => {
+      const allBanks: BloodBank[] = JSON.parse(sessionStorage.getItem('bloodBanks') || '[]');
+      const otherBanks = allBanks.filter(b => !(b.location === location && b.year === parseInt(year!, 10)));
+      const newAllBanks = [...otherBanks, ...updatedBanks];
+      sessionStorage.setItem('bloodBanks', JSON.stringify(newAllBanks));
+      setBloodBanks(updatedBanks);
+  }
   
   const handleNew = () => {
     setSelectedBank(null);
-    setFormState({ ...initialFormState, location: location });
+    setFormState({ ...initialFormState, location: location, year: parseInt(year!, 10) });
     setIsFormOpen(true);
   };
 
@@ -67,7 +63,8 @@ export default function BloodBankPage() {
 
   const handleDelete = () => {
     if (selectedBank) {
-        setBloodBanks(bloodBanks.filter(b => b.id !== selectedBank.id));
+        const updatedBanks = bloodBanks.filter(b => b.id !== selectedBank.id);
+        updateSessionStorage(updatedBanks);
         setIsDeleteDialogOpen(false);
         setSelectedBank(null);
     }
@@ -75,18 +72,20 @@ export default function BloodBankPage() {
   
   const handleCancel = () => {
     setSelectedBank(null);
-    setFormState(initialFormState);
+    setFormState({ ...initialFormState, location: location, year: parseInt(year!, 10) });
     setIsFormOpen(false);
   }
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
+    let updatedBanks;
     if (formState.id) { // Editing existing
-      setBloodBanks(bloodBanks.map(b => b.id === formState.id ? formState : b));
+      updatedBanks = bloodBanks.map(b => b.id === formState.id ? formState as BloodBank : b);
     } else { // Creating new
-      const newId = bloodBanks.length > 0 ? Math.max(...bloodBanks.map(b => b.id)) + 1 : 1;
-      setBloodBanks([...bloodBanks, { ...formState, id: newId }]);
+      const newId = Date.now(); // Simple unique ID
+      updatedBanks = [...bloodBanks, { ...formState, id: newId } as BloodBank];
     }
+    updateSessionStorage(updatedBanks);
     handleCancel();
   };
 
@@ -102,13 +101,13 @@ export default function BloodBankPage() {
     <div className="container mx-auto p-4 md:p-8">
       <Card>
         <CardHeader className="flex-row items-center justify-between">
-          <CardTitle>Blood Bank</CardTitle>
+          <CardTitle>Blood Bank Management ({location}, {year})</CardTitle>
           <div className="flex items-center space-x-1 md:space-x-2">
             <Button size="sm" onClick={handleNew}><PlusCircle className="mr-1 h-4 w-4" /> New</Button>
             <Button size="sm" variant="outline" onClick={handleEdit} disabled={!selectedBank}><Edit className="mr-1 h-4 w-4" /> Edit</Button>
             <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
               <DialogTrigger asChild>
-                <Button size="sm" variant="destructive" disabled={!selectedBank} onClick={() => setIsDeleteDialogOpen(true)}><Trash2 className="mr-1 h-4 w-4" /> Delete</Button>
+                <Button size="sm" variant="destructive" disabled={!selectedBank}><Trash2 className="mr-1 h-4 w-4" /> Delete</Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
@@ -124,7 +123,7 @@ export default function BloodBankPage() {
               </DialogContent>
             </Dialog>
             <Button size="sm" variant="outline" onClick={() => window.print()}><Printer className="mr-1 h-4 w-4" /> Print</Button>
-            <Button size="sm" variant="secondary" onClick={handleCancel}><Ban className="mr-1 h-4 w-4" /> Cancel</Button>
+            <Button size="sm" variant="secondary" onClick={handleCancel} disabled={!isFormOpen}><Ban className="mr-1 h-4 w-4" /> Cancel</Button>
             <Button size="sm" variant="ghost" onClick={handleClose}><X className="mr-1 h-4 w-4" /> Close</Button>
           </div>
         </CardHeader>
@@ -157,11 +156,11 @@ export default function BloodBankPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="counter">Counter No</Label>
-                <Input id="counter" type="number" placeholder="e.g., 2" value={formState?.counter || ''} onChange={(e) => setFormState({...formState, counter: parseInt(e.target.value) || ''})} />
+                <Input id="counter" type="number" placeholder="e.g., 2" value={formState?.counter || ''} onChange={(e) => setFormState({...formState, counter: parseInt(e.target.value) || 0})} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="quota">Quota / Limit</Label>
-                <Input id="quota" type="number" placeholder="e.g., 350" value={formState?.quota || ''} onChange={(e) => setFormState({...formState, quota: parseInt(e.target.value) || ''})} />
+                <Input id="quota" type="number" placeholder="e.g., 350" value={formState?.quota || ''} onChange={(e) => setFormState({...formState, quota: parseInt(e.target.value) || 0})} />
               </div>
                <div className="md:col-span-5 flex justify-end space-x-2 pt-2">
                     <Button type="button" variant="outline" onClick={handleCancel}>Cancel</Button>

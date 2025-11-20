@@ -8,31 +8,26 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { PlusCircle, Edit, Trash2, Printer, Ban, X, ArrowUp, ArrowDown } from 'lucide-react';
+import { ArrowUp, ArrowDown } from 'lucide-react';
+import { Registration, BloodBank } from '@/lib/mock-data';
 
-const mockRegistrations = [
-    { id: 1, name: 'Suresh Kumar', bloodGroup: 'O+', mobile: '9876543210', agency: 'AFMC BLOOD BANK' },
-    { id: 2, name: 'Anjali Sharma', bloodGroup: 'A-', mobile: '9876543211', agency: 'SAHYADRI BLOOD BANK' },
-    { id: 3, name: 'Rohan Patil', bloodGroup: 'B+', mobile: '9876543212', agency: 'YCM BLOOD BANK' },
-];
-
-const mockAgencies = ['AFMC BLOOD BANK', 'SAHYADRI BLOOD BANK', 'YCM BLOOD BANK', 'PSI BLOOD BANK', 'SASOON BLOOD BANK'];
 const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
-
-
-type SortKey = 'id' | 'name' | 'bloodGroup' | 'mobile' | 'agency';
+type SortKey = keyof Registration;
 
 export default function RegistrationPage() {
     const router = useRouter();
     const [location, setLocation] = useState<string | null>(null);
     const [year, setYear] = useState<string | null>(null);
 
-    const [registrations, setRegistrations] = useState(mockRegistrations);
-    const [newRegistration, setNewRegistration] = useState({ name: '', bloodGroup: '', mobile: '', agency: '' });
+    const [registrations, setRegistrations] = useState<Registration[]>([]);
+    const [agencies, setAgencies] = useState<BloodBank[]>([]);
+    const [stats, setStats] = useState({ registered: 0, accepted: 0, rejected: 0, donated: 0, limit: 0 });
+
+    const initialNewRegState = { name: '', bloodGroup: '', mobile: '', agency: '' };
+    const [newRegistration, setNewRegistration] = useState(initialNewRegState);
     
     const [sortKey, setSortKey] = useState<SortKey>('id');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-
 
     useEffect(() => {
         const savedLocation = sessionStorage.getItem('bdcLocation');
@@ -42,15 +37,51 @@ export default function RegistrationPage() {
         } else {
             setLocation(savedLocation);
             setYear(savedYear);
+            loadDataForCamp(savedLocation, savedYear);
         }
     }, [router]);
+    
+    const loadDataForCamp = (loc: string, yr: string) => {
+        const allRegistrations: Registration[] = JSON.parse(sessionStorage.getItem('registrations') || '[]');
+        const campRegistrations = allRegistrations.filter(r => r.location === loc && r.year === parseInt(yr));
+        setRegistrations(campRegistrations);
+
+        const allAgencies: BloodBank[] = JSON.parse(sessionStorage.getItem('bloodBanks') || '[]');
+        const campAgencies = allAgencies.filter(b => b.location === loc && b.year === parseInt(yr));
+        setAgencies(campAgencies);
+
+        const limit = campAgencies.reduce((sum, bank) => sum + bank.quota, 0);
+        setStats({
+            registered: campRegistrations.length,
+            accepted: campRegistrations.filter(r => r.status === 'ACCEPTED').length,
+            rejected: campRegistrations.filter(r => r.status === 'REJECTED').length,
+            donated: campRegistrations.filter(r => r.status === 'DONATED').length,
+            limit: limit
+        });
+    };
 
     const handleAddRegistration = (e: React.FormEvent) => {
         e.preventDefault();
-        if (newRegistration.name && newRegistration.bloodGroup && newRegistration.mobile && newRegistration.agency) {
-            const newId = registrations.length > 0 ? Math.max(...registrations.map(r => r.id)) + 1 : 1;
-            setRegistrations([...registrations, { id: newId, ...newRegistration }]);
-            setNewRegistration({ name: '', bloodGroup: '', mobile: '', agency: '' }); // Reset form
+        if (newRegistration.name && newRegistration.bloodGroup && newRegistration.mobile && newRegistration.agency && location && year) {
+            const allRegistrations: Registration[] = JSON.parse(sessionStorage.getItem('registrations') || '[]');
+            const newId = allRegistrations.length > 0 ? Math.max(...allRegistrations.map(r => r.id)) + 1 : 1;
+            
+            const newReg: Registration = {
+                id: newId,
+                name: newRegistration.name,
+                bloodGroup: newRegistration.bloodGroup,
+                mobile: newRegistration.mobile,
+                agency: newRegistration.agency,
+                location: location,
+                year: parseInt(year),
+                status: 'REGISTERED',
+            };
+            
+            const updatedRegistrations = [...allRegistrations, newReg];
+            sessionStorage.setItem('registrations', JSON.stringify(updatedRegistrations));
+            
+            setNewRegistration(initialNewRegState); // Reset form
+            loadDataForCamp(location, year); // Reload data
         }
     };
     
@@ -98,22 +129,22 @@ export default function RegistrationPage() {
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Limit</Label>
-                                    <Input value="350" readOnly className="bg-gray-200" />
+                                    <Input value={stats.limit} readOnly className="bg-gray-200" />
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Remaining</Label>
-                                    <Input value={350 - 20} readOnly className="bg-gray-200" />
+                                    <Input value={stats.limit - stats.accepted} readOnly className="bg-gray-200" />
                                 </div>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="agency">Agency</Label>
-                                    <Select value={newRegistration.agency} onValueChange={(value) => setNewRegistration({...newRegistration, agency: value})}>
+                                    <Select value={newRegistration.agency} onValueChange={(value) => setNewRegistration({...newRegistration, agency: value})} required>
                                         <SelectTrigger id="agency">
                                             <SelectValue placeholder="Select Agency" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {mockAgencies.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+                                            {agencies.map(a => <SelectItem key={a.id} value={a.name}>{a.name}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -125,7 +156,7 @@ export default function RegistrationPage() {
                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="bloodGroup">Blood Group</Label>
-                                    <Select value={newRegistration.bloodGroup} onValueChange={(value) => setNewRegistration({...newRegistration, bloodGroup: value})}>
+                                    <Select value={newRegistration.bloodGroup} onValueChange={(value) => setNewRegistration({...newRegistration, bloodGroup: value})} required>
                                         <SelectTrigger id="bloodGroup">
                                             <SelectValue placeholder="Select Blood Group" />
                                         </SelectTrigger>
@@ -177,7 +208,7 @@ export default function RegistrationPage() {
                                 <CardTitle className="text-blue-800">Registered</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <p className="text-3xl font-bold text-blue-900">150</p>
+                                <p className="text-3xl font-bold text-blue-900">{stats.registered}</p>
                             </CardContent>
                         </Card>
                         <Card className="bg-green-50 border-green-200">
@@ -185,7 +216,7 @@ export default function RegistrationPage() {
                                 <CardTitle className="text-green-800">Accepted</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <p className="text-3xl font-bold text-green-900">120</p>
+                                <p className="text-3xl font-bold text-green-900">{stats.accepted}</p>
                             </CardContent>
                         </Card>
                         <Card className="bg-red-50 border-red-200">
@@ -193,7 +224,7 @@ export default function RegistrationPage() {
                                 <CardTitle className="text-red-800">Rejected</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <p className="text-3xl font-bold text-red-900">20</p>
+                                <p className="text-3xl font-bold text-red-900">{stats.rejected}</p>
                             </CardContent>
                         </Card>
                          <Card className="bg-yellow-50 border-yellow-200">
@@ -201,7 +232,7 @@ export default function RegistrationPage() {
                                 <CardTitle className="text-yellow-800">Donated</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <p className="text-3xl font-bold text-yellow-900">100</p>
+                                <p className="text-3xl font-bold text-yellow-900">{stats.donated}</p>
                             </CardContent>
                         </Card>
                          <div className="flex flex-col space-y-2 mt-4">

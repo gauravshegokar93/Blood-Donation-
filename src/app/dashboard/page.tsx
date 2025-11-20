@@ -6,12 +6,21 @@ import { Droplets, Users, BarChart, Calendar, LogOut, Menu, X, Banknote, UserPlu
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from "next/link";
+import { Registration } from "@/lib/mock-data";
 
 export default function Dashboard() {
     const router = useRouter();
     const [location, setLocation] = useState<string | null>(null);
     const [year, setYear] = useState<string | null>(null);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [stats, setStats] = useState({
+        registrations: 0,
+        accepted: 0,
+        rejected: 0,
+        donated: 0,
+        bloodBanks: 0,
+        recent: [] as Registration[],
+    });
 
     useEffect(() => {
         const savedLocation = sessionStorage.getItem('bdcLocation');
@@ -22,12 +31,27 @@ export default function Dashboard() {
         } else {
             setLocation(savedLocation);
             setYear(savedYear);
+
+            const allRegistrations: Registration[] = JSON.parse(sessionStorage.getItem('registrations') || '[]');
+            const campRegistrations = allRegistrations.filter(r => r.location === savedLocation && r.year === parseInt(savedYear));
+            
+            const allBloodBanks = JSON.parse(sessionStorage.getItem('bloodBanks') || '[]');
+            const campBloodBanks = allBloodBanks.filter((b:any) => b.location === savedLocation);
+
+
+            setStats({
+                registrations: campRegistrations.length,
+                accepted: campRegistrations.filter(r => r.status === 'ACCEPTED').length,
+                rejected: campRegistrations.filter(r => r.status === 'REJECTED').length,
+                donated: campRegistrations.filter(r => r.status === 'DONATED').length,
+                bloodBanks: campBloodBanks.length,
+                recent: campRegistrations.slice(-5).reverse(), // Last 5 recent registrations
+            });
         }
     }, [router]);
 
     const handleLogout = () => {
-        sessionStorage.removeItem('bdcLocation');
-        sessionStorage.removeItem('bdcYear');
+        sessionStorage.clear();
         router.push('/');
     };
     
@@ -109,61 +133,61 @@ export default function Dashboard() {
                  </nav>
             </aside>
             <main className="flex-grow p-4 md:p-8">
-                <h2 className="text-3xl font-bold mb-6">Welcome, Admin</h2>
+                <h2 className="text-3xl font-bold mb-6">Welcome, Admin - ({location}, {year})</h2>
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">
-                        Total Donors
+                        Total Registrations
                     </CardTitle>
                     <Users className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                    <div className="text-2xl font-bold">1,254</div>
+                    <div className="text-2xl font-bold">{stats.registrations}</div>
                     <p className="text-xs text-muted-foreground">
-                        +20.1% from last month
+                        {stats.accepted} accepted, {stats.rejected} rejected
                     </p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">
-                        Units Available (O+)
+                        Donations
                     </CardTitle>
                     <Droplets className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                    <div className="text-2xl font-bold">150 Units</div>
+                    <div className="text-2xl font-bold">{stats.donated} Units</div>
                     <p className="text-xs text-muted-foreground">
-                        Most common blood group
+                        Goal: 350 Units
                     </p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">
-                        Recent Registrations
+                        Pending Acceptance
                     </CardTitle>
                     <BarChart className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                    <div className="text-2xl font-bold">+52</div>
+                    <div className="text-2xl font-bold">{stats.registrations - stats.accepted - stats.rejected}</div>
                     <p className="text-xs text-muted-foreground">
-                        in the last 24 hours
+                        donors waiting for processing
                     </p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">
-                        Upcoming Camps
+                        Participating Blood Banks
                     </CardTitle>
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                    <div className="text-2xl font-bold">3</div>
+                    <div className="text-2xl font-bold">{stats.bloodBanks}</div>
                     <p className="text-xs text-muted-foreground">
-                        scheduled this month
+                        in {location} for {year}
                     </p>
                     </CardContent>
                 </Card>
@@ -171,10 +195,31 @@ export default function Dashboard() {
                 <div className="mt-8">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Recent Donors</CardTitle>
+                            <CardTitle>Recent Registrations</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <p>A table of recent donors will be displayed here.</p>
+                            {stats.recent.length > 0 ? (
+                                <ul className="space-y-2">
+                                    {stats.recent.map(reg => (
+                                        <li key={reg.id} className="flex justify-between items-center p-2 rounded-md bg-gray-50">
+                                            <div>
+                                                <p className="font-semibold">{reg.name} <span className="font-normal text-muted-foreground">({reg.bloodGroup})</span></p>
+                                                <p className="text-sm text-gray-600">{reg.agency}</p>
+                                            </div>
+                                            <div className={`text-sm font-bold ${
+                                                reg.status === 'REGISTERED' ? 'text-blue-600' :
+                                                reg.status === 'ACCEPTED' ? 'text-green-600' :
+                                                reg.status === 'REJECTED' ? 'text-red-600' :
+                                                'text-yellow-600'
+                                            }`}>
+                                                {reg.status}
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p>No recent registrations for this camp.</p>
+                            )}
                         </CardContent>
                     </Card>
                 </div>

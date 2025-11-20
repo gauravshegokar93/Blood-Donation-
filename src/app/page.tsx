@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Droplets } from 'lucide-react';
+import { initializeMockData } from '@/lib/mock-data';
 
 // Placeholder data - we will fetch this from the database later
 const locations = ['Mumbai', 'Pune', 'Nagpur'];
@@ -18,12 +19,11 @@ export default function SessionStartPage() {
 
   const handleStart = () => {
     if (location && year) {
-      // In a real app, you'd use sessionStorage or context/state management
       sessionStorage.setItem('bdcLocation', location);
       sessionStorage.setItem('bdcYear', year);
+      initializeMockData(location, parseInt(year));
       router.push('/dashboard');
     } else {
-      // Simple validation feedback
       alert('Please select both a location and a year.');
     }
   };
