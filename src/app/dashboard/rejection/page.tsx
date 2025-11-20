@@ -39,7 +39,7 @@ export default function RejectionPage() {
     
     const handleReject = (e: React.FormEvent) => {
         e.preventDefault();
-        const regId = parseInt(registrationId, 10);
+        const regId = registrationId;
         if (!regId || !reason || !location || !year) {
             alert('Please enter a Registration ID and select a reason.');
             return;
@@ -87,11 +87,10 @@ export default function RejectionPage() {
                             <Label htmlFor="reg-id">Registered No.</Label>
                             <Input 
                                 id="reg-id" 
-                                placeholder="Enter Registration ID" 
+                                placeholder="Enter Registration ID (e.g., REG-YYYYMMDD-XXXX)" 
                                 value={registrationId}
                                 onChange={(e) => setRegistrationId(e.target.value)}
                                 required
-                                type="number"
                             />
                         </div>
                         <div className="space-y-2">

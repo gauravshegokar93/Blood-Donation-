@@ -14,6 +14,22 @@ import { Registration, BloodBank } from '@/lib/mock-data';
 const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 type SortKey = keyof Registration;
 
+function generateRegistrationId(existingRegistrations: Registration[]): string {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = (today.getMonth() + 1).toString().padStart(2, '0');
+    const day = today.getDate().toString().padStart(2, '0');
+    const datePrefix = `REG-${year}${month}${day}-`;
+
+    const todayRegistrations = existingRegistrations.filter(r => typeof r.id === 'string' && r.id.startsWith(datePrefix));
+    
+    const nextIdNumber = todayRegistrations.length + 1;
+    const nextId = nextIdNumber.toString().padStart(4, '0');
+    
+    return `${datePrefix}${nextId}`;
+}
+
+
 export default function RegistrationPage() {
     const router = useRouter();
     const [location, setLocation] = useState<string | null>(null);
@@ -25,6 +41,7 @@ export default function RegistrationPage() {
 
     const initialNewRegState = { name: '', bloodGroup: '', mobile: '', agency: '' };
     const [newRegistration, setNewRegistration] = useState(initialNewRegState);
+    const [nextRegId, setNextRegId] = useState('');
     
     const [sortKey, setSortKey] = useState<SortKey>('id');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -45,6 +62,7 @@ export default function RegistrationPage() {
         const allRegistrations: Registration[] = JSON.parse(sessionStorage.getItem('registrations') || '[]');
         const campRegistrations = allRegistrations.filter(r => r.location === loc && r.year === parseInt(yr));
         setRegistrations(campRegistrations);
+        setNextRegId(generateRegistrationId(allRegistrations));
 
         const allAgencies: BloodBank[] = JSON.parse(sessionStorage.getItem('bloodBanks') || '[]');
         const campAgencies = allAgencies.filter(b => b.location === loc && b.year === parseInt(yr));
@@ -64,10 +82,9 @@ export default function RegistrationPage() {
         e.preventDefault();
         if (newRegistration.name && newRegistration.bloodGroup && newRegistration.mobile && newRegistration.agency && location && year) {
             const allRegistrations: Registration[] = JSON.parse(sessionStorage.getItem('registrations') || '[]');
-            const newId = allRegistrations.length > 0 ? Math.max(...allRegistrations.map(r => r.id)) + 1 : 1;
             
             const newReg: Registration = {
-                id: newId,
+                id: nextRegId,
                 name: newRegistration.name,
                 bloodGroup: newRegistration.bloodGroup,
                 mobile: newRegistration.mobile,
@@ -124,8 +141,8 @@ export default function RegistrationPage() {
                         <form onSubmit={handleAddRegistration} className="p-4 border rounded-lg bg-slate-50 space-y-4">
                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="space-y-2">
-                                    <Label>Sr No</Label>
-                                    <Input value={registrations.length + 1} readOnly className="bg-gray-200" />
+                                    <Label>Reg. ID</Label>
+                                    <Input value={nextRegId} readOnly className="bg-gray-200" />
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Limit</Label>
@@ -180,7 +197,7 @@ export default function RegistrationPage() {
                             <Table>
                                 <TableHeader className="bg-yellow-300">
                                     <TableRow>
-                                        <TableHead className="text-black font-bold cursor-pointer" onClick={() => handleSort('id')}>SrNo {renderSortArrow('id')}</TableHead>
+                                        <TableHead className="text-black font-bold cursor-pointer" onClick={() => handleSort('id')}>Reg. ID {renderSortArrow('id')}</TableHead>
                                         <TableHead className="text-black font-bold cursor-pointer" onClick={() => handleSort('name')}>Name {renderSortArrow('name')}</TableHead>
                                         <TableHead className="text-black font-bold cursor-pointer" onClick={() => handleSort('bloodGroup')}>BloodGroup {renderSortArrow('bloodGroup')}</TableHead>
                                         <TableHead className="text-black font-bold cursor-pointer" onClick={() => handleSort('mobile')}>MobNo {renderSortArrow('mobile')}</TableHead>

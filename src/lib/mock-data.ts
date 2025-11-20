@@ -8,7 +8,7 @@ export interface BloodBank {
 }
 
 export interface Registration {
-    id: number;
+    id: string; // Changed to string for REG-YYYYMMDD-XXXX format
     name: string;
     bloodGroup: string;
     mobile: string;
@@ -34,14 +34,14 @@ const initialBloodBanks: BloodBank[] = [
 
 const initialRegistrations: Registration[] = [
     // Pune 2024
-    { id: 1, name: 'Suresh Kumar', bloodGroup: 'O+', mobile: '9876543210', agency: 'AFMC BLOOD BANK', location: 'Pune', year: 2024, status: 'ACCEPTED' },
-    { id: 2, name: 'Anjali Sharma', bloodGroup: 'A-', mobile: '9876543211', agency: 'SAHYADRI BLOOD BANK', location: 'Pune', year: 2024, status: 'REGISTERED' },
-    { id: 3, name: 'Rohan Patil', bloodGroup: 'B+', mobile: '9876543212', agency: 'YCM BLOOD BANK', location: 'Pune', year: 2024, status: 'DONATED' },
+    { id: 'REG-20240115-0001', name: 'Suresh Kumar', bloodGroup: 'O+', mobile: '9876543210', agency: 'AFMC BLOOD BANK', location: 'Pune', year: 2024, status: 'ACCEPTED' },
+    { id: 'REG-20240115-0002', name: 'Anjali Sharma', bloodGroup: 'A-', mobile: '9876543211', agency: 'SAHYADRI BLOOD BANK', location: 'Pune', year: 2024, status: 'REGISTERED' },
+    { id: 'REG-20240115-0003', name: 'Rohan Patil', bloodGroup: 'B+', mobile: '9876543212', agency: 'YCM BLOOD BANK', location: 'Pune', year: 2024, status: 'DONATED' },
     // Mumbai 2024
-    { id: 4, name: 'Amit Sharma', bloodGroup: 'O+', mobile: '9876543210', status: 'ACCEPTED', agency: 'City General Blood Bank', location: 'Mumbai', year: 2024 },
-    { id: 5, name: 'Priya Singh', bloodGroup: 'A+', mobile: '9876543211', status: 'REJECTED', agency: 'City General Blood Bank', location: 'Mumbai', year: 2024 },
+    { id: 'REG-20240220-0001', name: 'Amit Sharma', bloodGroup: 'O+', mobile: '9876543210', status: 'ACCEPTED', agency: 'City General Blood Bank', location: 'Mumbai', year: 2024 },
+    { id: 'REG-20240220-0002', name: 'Priya Singh', bloodGroup: 'A+', mobile: '9876543211', status: 'REJECTED', agency: 'City General Blood Bank', location: 'Mumbai', year: 2024 },
     // Mumbai 2023
-    { id: 6, name: 'Vikram Rathod', bloodGroup: 'B-', mobile: '7654321098', status: 'DONATED', agency: 'LifeLine Blood Services', location: 'Mumbai', year: 2023 },
+    { id: 'REG-20231110-0001', name: 'Vikram Rathod', bloodGroup: 'B-', mobile: '7654321098', status: 'DONATED', agency: 'LifeLine Blood Services', location: 'Mumbai', year: 2023 },
 ];
 
 export function initializeMockData(location: string, year: number) {

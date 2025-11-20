@@ -27,7 +27,7 @@ export default function AcceptancePage() {
     
     const handleAccept = (e: React.FormEvent) => {
         e.preventDefault();
-        const regId = parseInt(registrationId, 10);
+        const regId = registrationId;
         if (!regId || !location || !year) {
             alert('Please enter a valid Registration ID.');
             return;
@@ -72,11 +72,10 @@ export default function AcceptancePage() {
                             <Label htmlFor="reg-id">Registered No.</Label>
                             <Input 
                                 id="reg-id" 
-                                placeholder="Enter Registration ID" 
+                                placeholder="Enter Registration ID (e.g., REG-YYYYMMDD-XXXX)" 
                                 value={registrationId}
                                 onChange={(e) => setRegistrationId(e.target.value)}
                                 required
-                                type="number"
                             />
                         </div>
                     </CardContent>
