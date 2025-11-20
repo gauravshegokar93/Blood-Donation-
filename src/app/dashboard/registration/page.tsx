@@ -14,7 +14,7 @@ import { Registration, BloodBank } from '@/lib/mock-data';
 
 const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'Other'];
 type SortKey = keyof Registration;
-const MOCK_YEAR_FOR_DATA = 2024; // Year used to fetch initial data
+const MOCK_YEAR_FOR_DATA = 2024; // This is a constant for the mock data structure, not the displayed year.
 
 function generateRegistrationId(existingRegistrations: Registration[]): string {
     const today = new Date();
@@ -67,7 +67,6 @@ export default function RegistrationPage() {
     
     const loadDataForCamp = (loc: string, yr: string) => {
         const allRegistrations: Registration[] = JSON.parse(sessionStorage.getItem('registrations') || '[]');
-        const currentYear = yr === '2025-26' ? '2025-26' : MOCK_YEAR_FOR_DATA;
         const campRegistrations = allRegistrations.filter(r => r.location === loc && (r.year === MOCK_YEAR_FOR_DATA || r.year.toString() === yr));
         setRegistrations(campRegistrations);
         setNextRegId(generateRegistrationId(allRegistrations));
@@ -77,9 +76,10 @@ export default function RegistrationPage() {
         setAgencies(campAgencies);
 
         const limit = campAgencies.reduce((sum, bank) => sum + bank.quota, 0);
+        const campAccepted = campRegistrations.filter(r => r.status === 'ACCEPTED').length;
         setStats({
             registered: campRegistrations.length,
-            accepted: campRegistrations.filter(r => r.status === 'ACCEPTED').length,
+            accepted: campAccepted,
             rejected: campRegistrations.filter(r => r.status === 'REJECTED').length,
             donated: campRegistrations.filter(r => r.status === 'DONATED').length,
             limit: limit
@@ -88,7 +88,7 @@ export default function RegistrationPage() {
         // Calculate agency counts
         const counts: {[key: string]: number} = {};
         campAgencies.forEach(agency => {
-            counts[agency.name] = 0; // Initialize with 0
+            counts[agency.name] = 0; // Initialize with 0 for every agency in the location
         });
         campRegistrations.forEach(reg => {
             if(counts.hasOwnProperty(reg.agency)) {
@@ -104,9 +104,10 @@ export default function RegistrationPage() {
             const allRegistrations: Registration[] = JSON.parse(sessionStorage.getItem('registrations') || '[]');
             
             let updatedRegistrations;
+            const yearToSave = year === '2025-26' ? '2025-26' : MOCK_YEAR_FOR_DATA;
 
             if (isEditing && selectedRegistration) {
-                 updatedRegistrations = allRegistrations.map(r => r.id === selectedRegistration.id ? { ...selectedRegistration, ...formState } : r);
+                 updatedRegistrations = allRegistrations.map(r => r.id === selectedRegistration.id ? { ...selectedRegistration, ...formState, year: yearToSave } : r);
             } else {
                 const newReg: Registration = {
                     id: nextRegId,
@@ -115,7 +116,7 @@ export default function RegistrationPage() {
                     mobile: formState.mobile,
                     agency: formState.agency,
                     location: location,
-                    year: year === '2025-26' ? '2025-26' : MOCK_YEAR_FOR_DATA,
+                    year: yearToSave,
                     status: 'REGISTERED',
                 };
                 updatedRegistrations = [...allRegistrations, newReg];
@@ -350,5 +351,3 @@ export default function RegistrationPage() {
         </div>
     );
 }
-
-    
