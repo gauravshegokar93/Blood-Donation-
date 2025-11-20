@@ -19,8 +19,6 @@ const rejectionReasons = [
     "Other"
 ];
 
-const MOCK_YEAR_FOR_DATA = 2024;
-
 export default function RejectionPage() {
     const router = useRouter();
     const [location, setLocation] = useState<string | null>(null);
@@ -48,7 +46,7 @@ export default function RejectionPage() {
         }
 
         const allRegistrations: Registration[] = JSON.parse(sessionStorage.getItem('registrations') || '[]');
-        const registrationIndex = allRegistrations.findIndex(r => r.id === regId && r.location === location && (r.year === MOCK_YEAR_FOR_DATA || r.year.toString() === year));
+        const registrationIndex = allRegistrations.findIndex(r => r.id === regId && r.location === location && r.year.toString() === year);
 
         if (registrationIndex === -1) {
             alert(`Registration ID "${regId}" not found for this camp.`);
