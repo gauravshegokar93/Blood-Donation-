@@ -10,8 +10,8 @@ export default function Home() {
             <h1 className="text-2xl font-bold">Blood Bank Management</h1>
           </div>
           <nav className="space-x-4">
-            <a href="#" className="hover:underline">Home</a>
-            <a href="#" className="hover:underline">Dashboard</a>
+            <a href="/" className="hover:underline">Home</a>
+            <a href="/dashboard" className="hover:underline">Dashboard</a>
             <a href="#" className="hover:underline">Login</a>
           </nav>
         </div>
