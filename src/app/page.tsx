@@ -10,21 +10,20 @@ import { initializeMockData } from '@/lib/mock-data';
 
 // Placeholder data - we will fetch this from the database later
 const locations = ['Mumbai', 'Pune', 'Nagpur'];
-const years = ['2023', '2024', '2025'];
+const year = '2025-26';
 
 export default function SessionStartPage() {
   const router = useRouter();
   const [location, setLocation] = useState<string>('');
-  const [year, setYear] = useState<string>('');
 
   const handleStart = () => {
     if (location && year) {
       sessionStorage.setItem('bdcLocation', location);
       sessionStorage.setItem('bdcYear', year);
-      initializeMockData(location, parseInt(year));
+      initializeMockData(location, 2024); // Keep using a valid year for mock data retrieval
       router.push('/dashboard');
     } else {
-      alert('Please select both a location and a year.');
+      alert('Please select a location.');
     }
   };
 
@@ -50,7 +49,7 @@ export default function SessionStartPage() {
         <Card className="w-full max-w-md shadow-lg">
           <CardHeader>
             <CardTitle>Start Your Session</CardTitle>
-            <CardDescription>Select the camp location and year to continue.</CardDescription>
+            <CardDescription>Select the camp location to continue for the year {year}.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
@@ -68,17 +67,14 @@ export default function SessionStartPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <label htmlFor="year-select" className="text-sm font-medium">BDC Year</label>
-                <Select onValueChange={setYear} value={year}>
-                  <SelectTrigger id="year-select">
-                    <SelectValue placeholder="Select Year" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {years.map(y => (
-                      <SelectItem key={y} value={y}>{y}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <label htmlFor="year-display" className="text-sm font-medium">BDC Year</label>
+                <input
+                    id="year-display"
+                    type="text"
+                    readOnly
+                    value={year}
+                    className="flex h-10 w-full rounded-md border border-input bg-gray-100 px-3 py-2 text-sm ring-offset-background"
+                 />
               </div>
               <Button onClick={handleStart} className="w-full bg-primary hover:bg-red-700">
                 Start

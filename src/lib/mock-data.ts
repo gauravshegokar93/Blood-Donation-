@@ -2,7 +2,7 @@ export interface BloodBank {
     id: number;
     name: string;
     location: string;
-    year: number;
+    year: number | string;
     counter: number;
     quota: number;
 }
@@ -14,7 +14,7 @@ export interface Registration {
     mobile: string;
     agency: string;
     location: string;
-    year: number;
+    year: number | string;
     status: 'REGISTERED' | 'ACCEPTED' | 'REJECTED' | 'DONATED';
 }
 

@@ -30,7 +30,7 @@ export default function BDC_StatusAllPage() {
                 <CardHeader>
                     <CardTitle>BDC Status Report - All Locations</CardTitle>
                     <CardDescription>
-                        Summary for all locations and years for the camp at {location}, {year}.
+                        Summary for all locations for the camp year {year}.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>

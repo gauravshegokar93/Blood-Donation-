@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Registration } from '@/lib/mock-data';
 
+const MOCK_YEAR_FOR_DATA = 2024;
+
 export default function AcceptancePage() {
     const router = useRouter();
     const [location, setLocation] = useState<string | null>(null);
@@ -34,7 +36,7 @@ export default function AcceptancePage() {
         }
 
         const allRegistrations: Registration[] = JSON.parse(sessionStorage.getItem('registrations') || '[]');
-        const registrationIndex = allRegistrations.findIndex(r => r.id === regId && r.location === location && r.year === parseInt(year));
+        const registrationIndex = allRegistrations.findIndex(r => r.id === regId && r.location === location && (r.year === MOCK_YEAR_FOR_DATA || r.year.toString() === year));
 
         if (registrationIndex === -1) {
             alert(`Registration ID "${regId}" not found for this camp.`);

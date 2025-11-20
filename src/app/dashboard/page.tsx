@@ -8,6 +8,8 @@ import { useEffect, useState } from 'react';
 import Link from "next/link";
 import { Registration, BloodBank } from "@/lib/mock-data";
 
+const MOCK_YEAR_FOR_DATA = 2024;
+
 export default function Dashboard() {
     const router = useRouter();
     const [location, setLocation] = useState<string | null>(null);
@@ -40,19 +42,20 @@ export default function Dashboard() {
             const totalRejected = allRegistrations.filter(r => r.status === 'REJECTED').length;
 
             // Camp-specific stats
-            const campRegistrations = allRegistrations.filter(r => r.location === savedLocation && r.year === parseInt(savedYear));
+            const campRegistrations = allRegistrations.filter(r => r.location === savedLocation && (r.year === MOCK_YEAR_FOR_DATA || r.year.toString() === savedYear));
             const campAccepted = campRegistrations.filter(r => r.status === 'ACCEPTED').length;
             const campRejected = campRegistrations.filter(r => r.status === 'REJECTED').length;
+            const campRegisteredCount = campRegistrations.length;
 
             const allBloodBanks: BloodBank[] = JSON.parse(sessionStorage.getItem('bloodBanks') || '[]');
-            const campBloodBanks = allBloodBanks.filter(b => b.location === savedLocation && b.year === parseInt(savedYear));
+            const campBloodBanks = allBloodBanks.filter(b => b.location === savedLocation && (b.year === MOCK_YEAR_FOR_DATA || b.year.toString() === savedYear));
 
             setStats({
                 totalRegistrations: totalRegistrations,
                 totalAccepted: totalAccepted,
                 totalRejected: totalRejected,
                 campDonated: campRegistrations.filter(r => r.status === 'DONATED').length,
-                campPending: campRegistrations.length - campAccepted - campRejected,
+                campPending: campRegisteredCount - campAccepted - campRejected,
                 campBloodBanks: campBloodBanks.length,
                 recent: campRegistrations.slice(-5).reverse(),
             });

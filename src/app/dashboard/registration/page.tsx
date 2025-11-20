@@ -13,6 +13,7 @@ import { Registration, BloodBank } from '@/lib/mock-data';
 
 const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'Other'];
 type SortKey = keyof Registration;
+const MOCK_YEAR_FOR_DATA = 2024; // Year used to fetch initial data
 
 function generateRegistrationId(existingRegistrations: Registration[]): string {
     const today = new Date();
@@ -60,12 +61,12 @@ export default function RegistrationPage() {
     
     const loadDataForCamp = (loc: string, yr: string) => {
         const allRegistrations: Registration[] = JSON.parse(sessionStorage.getItem('registrations') || '[]');
-        const campRegistrations = allRegistrations.filter(r => r.location === loc && r.year === parseInt(yr));
+        const campRegistrations = allRegistrations.filter(r => r.location === loc && (r.year === MOCK_YEAR_FOR_DATA || r.year.toString() === yr));
         setRegistrations(campRegistrations);
         setNextRegId(generateRegistrationId(allRegistrations));
 
         const allAgencies: BloodBank[] = JSON.parse(sessionStorage.getItem('bloodBanks') || '[]');
-        const campAgencies = allAgencies.filter(b => b.location === loc && b.year === parseInt(yr));
+        const campAgencies = allAgencies.filter(b => b.location === loc && (b.year === MOCK_YEAR_FOR_DATA || b.year.toString() === yr));
         setAgencies(campAgencies);
 
         const limit = campAgencies.reduce((sum, bank) => sum + bank.quota, 0);
@@ -90,7 +91,7 @@ export default function RegistrationPage() {
                 mobile: newRegistration.mobile,
                 agency: newRegistration.agency,
                 location: location,
-                year: parseInt(year),
+                year: year === '2025-26' ? '2025-26' : MOCK_YEAR_FOR_DATA,
                 status: 'REGISTERED',
             };
             
