@@ -84,7 +84,7 @@ export default function Dashboard() {
                  <nav className="flex flex-col space-y-2">
                     <Link href="/dashboard/blood-bank" className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-100"><Banknote className="h-5 w-5"/><span>Blood Bank</span></Link>
                     <Link href="/dashboard/registration" className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-100"><UserPlus className="h-5 w-5"/><span>Registration</span></Link>
-                    <Link href="#" className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-100"><CheckCircle className="h-5 w-5"/><span>Acceptance</span></Link>
+                    <Link href="/dashboard/acceptance" className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-100"><CheckCircle className="h-5 w-5"/><span>Acceptance</span></Link>
                     <Link href="#" className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-100"><XCircle className="h-5 w-5"/><span>Rejection</span></Link>
                     <div className="relative">
                         <a href="#" className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-100"><FileText className="h-5 w-5"/><span>Reports</span></a>
