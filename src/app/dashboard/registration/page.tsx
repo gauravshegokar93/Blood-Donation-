@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ArrowUp, ArrowDown } from 'lucide-react';
 import { Registration, BloodBank } from '@/lib/mock-data';
 
-const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'Other'];
 type SortKey = keyof Registration;
 
 function generateRegistrationId(existingRegistrations: Registration[]): string {
