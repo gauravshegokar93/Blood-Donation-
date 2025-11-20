@@ -32,9 +32,12 @@ export default function BloodBankPage() {
   const [bloodBanks, setBloodBanks] = useState(mockBloodBanks);
   const [selectedBank, setSelectedBank] = useState<any>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [location, setLocation] = useState<string | null>(null);
   const [year, setYear] = useState<string | null>(null);
   const [formState, setFormState] = useState<any>({ id: null, name: '', location: '', counter: '', quota: '' });
+  
+  const initialFormState = { id: null, name: '', location: '', counter: '', quota: '' };
 
   useEffect(() => {
     const savedLocation = sessionStorage.getItem('bdcLocation');
@@ -45,37 +48,34 @@ export default function BloodBankPage() {
       setLocation(savedLocation);
       setYear(savedYear);
       setFormState((prev:any) => ({ ...prev, location: savedLocation }));
+      initialFormState.location = savedLocation;
     }
   }, [router]);
+  
+  const handleNew = () => {
+    setSelectedBank(null);
+    setFormState({ ...initialFormState, location: location });
+    setIsFormOpen(true);
+  };
 
-  useEffect(() => {
+  const handleEdit = () => {
     if (selectedBank) {
       setFormState(selectedBank);
       setIsFormOpen(true);
     }
-  }, [selectedBank]);
-  
-  const handleNew = () => {
-    setSelectedBank(null);
-    setFormState({ id: null, name: '', location: location, counter: '', quota: '' });
-    setIsFormOpen(true);
   };
 
-  const handleEdit = (bank: any) => {
-    if(selectedBank) {
-      setFormState(bank);
-      setIsFormOpen(true);
+  const handleDelete = () => {
+    if (selectedBank) {
+        setBloodBanks(bloodBanks.filter(b => b.id !== selectedBank.id));
+        setIsDeleteDialogOpen(false);
+        setSelectedBank(null);
     }
-  };
-
-  const handleDelete = (bankId: number) => {
-    setBloodBanks(bloodBanks.filter(b => b.id !== bankId));
-    handleCancel();
   };
   
   const handleCancel = () => {
     setSelectedBank(null);
-    setFormState({ id: null, name: '', location: location, counter: '', quota: '' });
+    setFormState(initialFormState);
     setIsFormOpen(false);
   }
 
@@ -105,10 +105,10 @@ export default function BloodBankPage() {
           <CardTitle>Blood Bank</CardTitle>
           <div className="flex items-center space-x-1 md:space-x-2">
             <Button size="sm" onClick={handleNew}><PlusCircle className="mr-1 h-4 w-4" /> New</Button>
-            <Button size="sm" variant="outline" onClick={() => selectedBank && handleEdit(selectedBank)} disabled={!selectedBank}><Edit className="mr-1 h-4 w-4" /> Edit</Button>
-            <Dialog>
+            <Button size="sm" variant="outline" onClick={handleEdit} disabled={!selectedBank}><Edit className="mr-1 h-4 w-4" /> Edit</Button>
+            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
               <DialogTrigger asChild>
-                <Button size="sm" variant="destructive" disabled={!selectedBank}><Trash2 className="mr-1 h-4 w-4" /> Delete</Button>
+                <Button size="sm" variant="destructive" disabled={!selectedBank} onClick={() => setIsDeleteDialogOpen(true)}><Trash2 className="mr-1 h-4 w-4" /> Delete</Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
@@ -118,12 +118,8 @@ export default function BloodBankPage() {
                   </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
-                   <Button variant="outline" onClick={() => setSelectedBank(null)}>Cancel</Button>
-                  <Button variant="destructive" onClick={() => {
-                    if (selectedBank) {
-                      handleDelete(selectedBank.id);
-                    }
-                  }}>Delete</Button>
+                   <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>Cancel</Button>
+                  <Button variant="destructive" onClick={handleDelete}>Delete</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -161,11 +157,11 @@ export default function BloodBankPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="counter">Counter No</Label>
-                <Input id="counter" type="number" placeholder="e.g., 2" value={formState?.counter || ''} onChange={(e) => setFormState({...formState, counter: e.target.value})} />
+                <Input id="counter" type="number" placeholder="e.g., 2" value={formState?.counter || ''} onChange={(e) => setFormState({...formState, counter: parseInt(e.target.value) || ''})} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="quota">Quota / Limit</Label>
-                <Input id="quota" type="number" placeholder="e.g., 350" value={formState?.quota || ''} onChange={(e) => setFormState({...formState, quota: e.target.value})} />
+                <Input id="quota" type="number" placeholder="e.g., 350" value={formState?.quota || ''} onChange={(e) => setFormState({...formState, quota: parseInt(e.target.value) || ''})} />
               </div>
                <div className="md:col-span-5 flex justify-end space-x-2 pt-2">
                     <Button type="button" variant="outline" onClick={handleCancel}>Cancel</Button>
