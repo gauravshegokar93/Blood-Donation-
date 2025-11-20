@@ -39,6 +39,7 @@ export default function RegistrationPage() {
     const [registrations, setRegistrations] = useState<Registration[]>([]);
     const [agencies, setAgencies] = useState<BloodBank[]>([]);
     const [stats, setStats] = useState({ registered: 0, accepted: 0, rejected: 0, donated: 0, limit: 0 });
+    const [agencyCounts, setAgencyCounts] = useState<{[key: string]: number}>({});
 
     const initialNewRegState = { name: '', bloodGroup: '', mobile: '', agency: '' };
     const [newRegistration, setNewRegistration] = useState(initialNewRegState);
@@ -77,6 +78,18 @@ export default function RegistrationPage() {
             donated: campRegistrations.filter(r => r.status === 'DONATED').length,
             limit: limit
         });
+        
+        // Calculate agency counts
+        const counts: {[key: string]: number} = {};
+        campAgencies.forEach(agency => {
+            counts[agency.name] = 0; // Initialize with 0
+        });
+        campRegistrations.forEach(reg => {
+            if(counts.hasOwnProperty(reg.agency)) {
+                counts[reg.agency]++;
+            }
+        });
+        setAgencyCounts(counts);
     };
 
     const handleAddRegistration = (e: React.FormEvent) => {
@@ -221,36 +234,27 @@ export default function RegistrationPage() {
                     </div>
                     {/* Stats Column */}
                     <div className="lg:col-span-1 space-y-4">
-                        <Card className="bg-blue-50 border-blue-200">
+                        <Card>
                             <CardHeader>
-                                <CardTitle className="text-blue-800">Registered</CardTitle>
+                                <CardTitle className="text-lg">Blood Bank Agencies (Current Location)</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <p className="text-3xl font-bold text-blue-900">{stats.registered}</p>
-                            </CardContent>
-                        </Card>
-                        <Card className="bg-green-50 border-green-200">
-                            <CardHeader>
-                                <CardTitle className="text-green-800">Accepted</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-3xl font-bold text-green-900">{stats.accepted}</p>
-                            </CardContent>
-                        </Card>
-                        <Card className="bg-red-50 border-red-200">
-                            <CardHeader>
-                                <CardTitle className="text-red-800">Rejected</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-3xl font-bold text-red-900">{stats.rejected}</p>
-                            </CardContent>
-                        </Card>
-                         <Card className="bg-yellow-50 border-yellow-200">
-                            <CardHeader>
-                                <CardTitle className="text-yellow-800">Donated</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-3xl font-bold text-yellow-900">{stats.donated}</p>
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>AgencyName</TableHead>
+                                            <TableHead className="text-right">TotalCount</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {Object.entries(agencyCounts).map(([agencyName, count]) => (
+                                            <TableRow key={agencyName}>
+                                                <TableCell className="font-medium">{agencyName}</TableCell>
+                                                <TableCell className="text-right">{count}</TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
                             </CardContent>
                         </Card>
                          <div className="flex flex-col space-y-2 mt-4">
