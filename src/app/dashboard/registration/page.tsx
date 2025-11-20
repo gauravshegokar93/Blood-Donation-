@@ -53,26 +53,15 @@ export default function RegistrationPage() {
     const [isEditing, setIsEditing] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-    useEffect(() => {
-        const savedLocation = sessionStorage.getItem('bdcLocation');
-        const savedYear = sessionStorage.getItem('bdcYear');
-        if (!savedLocation || !savedYear) {
-            router.push('/');
-        } else {
-            setLocation(savedLocation);
-            setYear(savedYear);
-            loadDataForCamp(savedLocation, savedYear);
-        }
-    }, [router]);
-    
     const loadDataForCamp = (loc: string, yr: string) => {
         const allRegistrations: Registration[] = JSON.parse(sessionStorage.getItem('registrations') || '[]');
-        const campRegistrations = allRegistrations.filter(r => r.location === loc && (r.year === MOCK_YEAR_FOR_DATA || r.year.toString() === yr));
+        const campYear = yr === '2025-26' ? '2025-26' : parseInt(yr, 10);
+        const campRegistrations = allRegistrations.filter(r => r.location === loc && (r.year === campYear || r.year.toString() === yr));
         setRegistrations(campRegistrations);
         setNextRegId(generateRegistrationId(allRegistrations));
 
         const allAgencies: BloodBank[] = JSON.parse(sessionStorage.getItem('bloodBanks') || '[]');
-        const campAgencies = allAgencies.filter(b => b.location === loc && (b.year === MOCK_YEAR_FOR_DATA || b.year.toString() === yr));
+        const campAgencies = allAgencies.filter(b => b.location === loc && (b.year === campYear || b.year.toString() === yr));
         setAgencies(campAgencies);
 
         const limit = campAgencies.reduce((sum, bank) => sum + bank.quota, 0);
@@ -85,26 +74,44 @@ export default function RegistrationPage() {
             limit: limit
         });
         
-        // Calculate agency counts
         const counts: {[key: string]: number} = {};
         campAgencies.forEach(agency => {
-            counts[agency.name] = 0; // Initialize with 0 for every agency in the location
-        });
-        campRegistrations.forEach(reg => {
-            if(counts.hasOwnProperty(reg.agency)) {
-                counts[reg.agency]++;
-            }
+            counts[agency.name] = campRegistrations.filter(reg => reg.agency === agency.name).length;
         });
         setAgencyCounts(counts);
     };
 
+    useEffect(() => {
+        const savedLocation = sessionStorage.getItem('bdcLocation');
+        const savedYear = sessionStorage.getItem('bdcYear');
+        if (!savedLocation || !savedYear) {
+            router.push('/');
+            return;
+        }
+        
+        setLocation(savedLocation);
+        setYear(savedYear);
+        loadDataForCamp(savedLocation, savedYear);
+
+        const handleFocus = () => {
+            console.log('Page focused, reloading data.');
+            loadDataForCamp(savedLocation, savedYear);
+        };
+        
+        window.addEventListener('focus', handleFocus);
+        return () => {
+            window.removeEventListener('focus', handleFocus);
+        };
+
+    }, [router]);
+    
     const handleSaveRegistration = (e: React.FormEvent) => {
         e.preventDefault();
         if (formState.name && formState.bloodGroup && formState.mobile && formState.agency && location && year) {
             const allRegistrations: Registration[] = JSON.parse(sessionStorage.getItem('registrations') || '[]');
             
             let updatedRegistrations;
-            const yearToSave = year === '2025-26' ? '2025-26' : MOCK_YEAR_FOR_DATA;
+            const yearToSave = '2025-26';
 
             if (isEditing && selectedRegistration) {
                  updatedRegistrations = allRegistrations.map(r => r.id === selectedRegistration.id ? { ...selectedRegistration, ...formState, year: yearToSave } : r);
@@ -351,3 +358,5 @@ export default function RegistrationPage() {
         </div>
     );
 }
+
+    
