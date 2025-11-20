@@ -1,7 +1,8 @@
 'use client';
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Droplets, Users, BarChart, Calendar, LogOut, Menu, X, Banknote, UserPlus, CheckCircle, XCircle, FileText } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Droplets, Users, BarChart, Calendar, LogOut, Menu, X, Banknote, UserPlus, CheckCircle, XCircle, FileText, ChevronDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from "next/link";
@@ -86,9 +87,25 @@ export default function Dashboard() {
                     <Link href="/dashboard/registration" className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-100"><UserPlus className="h-5 w-5"/><span>Registration</span></Link>
                     <Link href="/dashboard/acceptance" className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-100"><CheckCircle className="h-5 w-5"/><span>Acceptance</span></Link>
                     <Link href="/dashboard/rejection" className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-100"><XCircle className="h-5 w-5"/><span>Rejection</span></Link>
-                    <div className="relative">
-                        <a href="#" className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-100"><FileText className="h-5 w-5"/><span>Reports</span></a>
-                    </div>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger className="flex w-full items-center justify-between space-x-2 p-2 rounded-md hover:bg-gray-100 text-sm">
+                           <div className="flex items-center space-x-2">
+                             <FileText className="h-5 w-5"/><span>Reports</span>
+                           </div>
+                           <ChevronDown className="h-4 w-4" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-56 ml-2">
+                            <DropdownMenuItem asChild>
+                                <Link href="/dashboard/reports/status-all">BDC Status - All</Link>
+                            </DropdownMenuItem>
+                             <DropdownMenuItem asChild>
+                                <Link href="/dashboard/reports/status-location">BDC Status - Location-wise</Link>
+                            </DropdownMenuItem>
+                             <DropdownMenuItem asChild>
+                                <Link href="/dashboard/reports/history">BDC History</Link>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                  </nav>
             </aside>
             <main className="flex-grow p-4 md:p-8">
