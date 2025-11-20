@@ -1,68 +1,93 @@
-import { Droplets, HeartPulse, User, Building } from 'lucide-react';
+'use client';
 
-export default function Home() {
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Droplets } from 'lucide-react';
+
+// Placeholder data - we will fetch this from the database later
+const locations = ['Mumbai', 'Pune', 'Nagpur'];
+const years = ['2023', '2024', '2025'];
+
+export default function SessionStartPage() {
+  const router = useRouter();
+  const [location, setLocation] = useState<string>('');
+  const [year, setYear] = useState<string>('');
+
+  const handleStart = () => {
+    if (location && year) {
+      // In a real app, you'd use sessionStorage or context/state management
+      sessionStorage.setItem('bdcLocation', location);
+      sessionStorage.setItem('bdcYear', year);
+      router.push('/dashboard');
+    } else {
+      // Simple validation feedback
+      alert('Please select both a location and a year.');
+    }
+  };
+
   return (
-    <div className="flex flex-col min-h-screen bg-background font-sans">
-      <header className="bg-primary text-primary-foreground p-4 shadow-md">
+    <div className="flex flex-col min-h-screen items-center justify-center bg-gray-100 p-4 font-sans">
+       <header className="absolute top-0 left-0 right-0 bg-primary text-primary-foreground p-4 shadow-md">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-2">
             <Droplets className="h-8 w-8" />
             <h1 className="text-2xl font-bold">Blood Bank Management</h1>
           </div>
           <nav className="space-x-4">
-            <a href="/" className="hover:underline">Home</a>
-            <a href="/dashboard" className="hover:underline">Dashboard</a>
-            <a href="#" className="hover:underline">Login</a>
+             <a href="/home" className="hover:underline">Home</a>
+             <a href="/dashboard" className="hover:underline">Dashboard</a>
           </nav>
         </div>
       </header>
-
-      <main className="flex-grow">
-        <section className="bg-white py-20">
-          <div className="container mx-auto text-center">
-            <h2 className="text-5xl font-extrabold text-primary mb-4">
-              Donate Blood, Save Lives
-            </h2>
-            <p className="text-accent-foreground text-lg max-w-2xl mx-auto mb-8">
-              Welcome to the central portal for blood bank management. Your donation can make a world of difference.
-            </p>
-            <a
-              href="#"
-              className="bg-primary text-primary-foreground font-bold py-3 px-8 rounded-full hover:bg-red-700 transition duration-300"
-            >
-              Register as a Donor
-            </a>
-          </div>
-        </section>
-
-        <section className="py-20">
-          <div className="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
-            <div className="flex flex-col items-center">
-              <HeartPulse className="h-16 w-16 text-primary mb-4" />
-              <h3 className="text-2xl font-bold mb-2">Why Donate?</h3>
-              <p className="text-accent-foreground">
-                A single donation can save up to three lives. Be a hero in your community.
-              </p>
+      <main className="flex flex-col items-center">
+        <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-gray-800">WADHOKAR GROUP OF COMPANIES</h1>
+            <p className="text-xl text-accent-foreground mt-2">Blood Donation Camp</p>
+        </div>
+        <Card className="w-full max-w-md shadow-lg">
+          <CardHeader>
+            <CardTitle>Start Your Session</CardTitle>
+            <CardDescription>Select the camp location and year to continue.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <label htmlFor="location-select" className="text-sm font-medium">BDC Location</label>
+                <Select onValueChange={setLocation} value={location}>
+                  <SelectTrigger id="location-select">
+                    <SelectValue placeholder="Select Location" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {locations.map(loc => (
+                      <SelectItem key={loc} value={loc}>{loc}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="year-select" className="text-sm font-medium">BDC Year</label>
+                <Select onValueChange={setYear} value={year}>
+                  <SelectTrigger id="year-select">
+                    <SelectValue placeholder="Select Year" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {years.map(y => (
+                      <SelectItem key={y} value={y}>{y}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button onClick={handleStart} className="w-full bg-primary hover:bg-red-700">
+                Start
+              </Button>
             </div>
-            <div className="flex flex-col items-center">
-              <User className="h-16 w-16 text-primary mb-4" />
-              <h3 className="text-2xl font-bold mb-2">For Donors</h3>
-              <p className="text-accent-foreground">
-                Find nearby blood banks, schedule appointments, and track your donation history.
-              </p>
-            </div>
-            <div className="flex flex-col items-center">
-              <Building className="h-16 w-16 text-primary mb-4" />
-              <h3 className="text-2xl font-bold mb-2">For Blood Banks</h3>
-              <p className="text-accent-foreground">
-                Manage your inventory, donor registrations, and camp schedules efficiently.
-              </p>
-            </div>
-          </div>
-        </section>
+          </CardContent>
+        </Card>
       </main>
-
-      <footer className="bg-gray-100 text-accent-foreground p-4">
+       <footer className="absolute bottom-0 left-0 right-0 bg-gray-100 text-accent-foreground p-4">
         <div className="container mx-auto text-center text-sm">
           <p>&copy; {new Date().getFullYear()} Blood Bank Management System. All Rights Reserved.</p>
         </div>
