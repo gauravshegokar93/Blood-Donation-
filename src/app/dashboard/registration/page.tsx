@@ -67,6 +67,7 @@ export default function RegistrationPage() {
     
     const loadDataForCamp = (loc: string, yr: string) => {
         const allRegistrations: Registration[] = JSON.parse(sessionStorage.getItem('registrations') || '[]');
+        const currentYear = yr === '2025-26' ? '2025-26' : MOCK_YEAR_FOR_DATA;
         const campRegistrations = allRegistrations.filter(r => r.location === loc && (r.year === MOCK_YEAR_FOR_DATA || r.year.toString() === yr));
         setRegistrations(campRegistrations);
         setNextRegId(generateRegistrationId(allRegistrations));
@@ -349,3 +350,5 @@ export default function RegistrationPage() {
         </div>
     );
 }
+
+    
