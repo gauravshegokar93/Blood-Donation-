@@ -6,7 +6,7 @@ import { Droplets, Users, BarChart, Calendar, LogOut, Menu, X, Banknote, UserPlu
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from "next/link";
-import { Registration } from "@/lib/mock-data";
+import { Registration, BloodBank } from "@/lib/mock-data";
 
 export default function Dashboard() {
     const router = useRouter();
@@ -14,11 +14,12 @@ export default function Dashboard() {
     const [year, setYear] = useState<string | null>(null);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [stats, setStats] = useState({
-        registrations: 0,
-        accepted: 0,
-        rejected: 0,
-        donated: 0,
-        bloodBanks: 0,
+        totalRegistrations: 0,
+        totalAccepted: 0,
+        totalRejected: 0,
+        campDonated: 0,
+        campPending: 0,
+        campBloodBanks: 0,
         recent: [] as Registration[],
     });
 
@@ -32,20 +33,28 @@ export default function Dashboard() {
             setLocation(savedLocation);
             setYear(savedYear);
 
+            // Global stats
             const allRegistrations: Registration[] = JSON.parse(sessionStorage.getItem('registrations') || '[]');
-            const campRegistrations = allRegistrations.filter(r => r.location === savedLocation && r.year === parseInt(savedYear));
-            
-            const allBloodBanks = JSON.parse(sessionStorage.getItem('bloodBanks') || '[]');
-            const campBloodBanks = allBloodBanks.filter((b:any) => b.location === savedLocation);
+            const totalRegistrations = allRegistrations.length;
+            const totalAccepted = allRegistrations.filter(r => r.status === 'ACCEPTED').length;
+            const totalRejected = allRegistrations.filter(r => r.status === 'REJECTED').length;
 
+            // Camp-specific stats
+            const campRegistrations = allRegistrations.filter(r => r.location === savedLocation && r.year === parseInt(savedYear));
+            const campAccepted = campRegistrations.filter(r => r.status === 'ACCEPTED').length;
+            const campRejected = campRegistrations.filter(r => r.status === 'REJECTED').length;
+
+            const allBloodBanks: BloodBank[] = JSON.parse(sessionStorage.getItem('bloodBanks') || '[]');
+            const campBloodBanks = allBloodBanks.filter(b => b.location === savedLocation && b.year === parseInt(savedYear));
 
             setStats({
-                registrations: campRegistrations.length,
-                accepted: campRegistrations.filter(r => r.status === 'ACCEPTED').length,
-                rejected: campRegistrations.filter(r => r.status === 'REJECTED').length,
-                donated: campRegistrations.filter(r => r.status === 'DONATED').length,
-                bloodBanks: campBloodBanks.length,
-                recent: campRegistrations.slice(-5).reverse(), // Last 5 recent registrations
+                totalRegistrations: totalRegistrations,
+                totalAccepted: totalAccepted,
+                totalRejected: totalRejected,
+                campDonated: campRegistrations.filter(r => r.status === 'DONATED').length,
+                campPending: campRegistrations.length - campAccepted - campRejected,
+                campBloodBanks: campBloodBanks.length,
+                recent: campRegistrations.slice(-5).reverse(),
             });
         }
     }, [router]);
@@ -143,9 +152,9 @@ export default function Dashboard() {
                     <Users className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                    <div className="text-2xl font-bold">{stats.registrations}</div>
+                    <div className="text-2xl font-bold">{stats.totalRegistrations}</div>
                     <p className="text-xs text-muted-foreground">
-                        Total donors registered
+                        Total donors registered (all branches)
                     </p>
                     </CardContent>
                 </Card>
@@ -157,9 +166,9 @@ export default function Dashboard() {
                     <CheckCircle className="h-4 w-4 text-green-500" />
                     </CardHeader>
                     <CardContent>
-                    <div className="text-2xl font-bold">{stats.accepted}</div>
+                    <div className="text-2xl font-bold">{stats.totalAccepted}</div>
                     <p className="text-xs text-muted-foreground">
-                        Donors approved
+                        Donors approved (all branches)
                     </p>
                     </CardContent>
                 </Card>
@@ -171,49 +180,49 @@ export default function Dashboard() {
                     <XCircle className="h-4 w-4 text-red-500" />
                     </CardHeader>
                     <CardContent>
-                    <div className="text-2xl font-bold">{stats.rejected}</div>
+                    <div className="text-2xl font-bold">{stats.totalRejected}</div>
                     <p className="text-xs text-muted-foreground">
-                        Donors declined
+                        Donors declined (all branches)
                     </p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">
-                        Donations
+                        Camp Donations
                     </CardTitle>
                     <Droplets className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                    <div className="text-2xl font-bold">{stats.donated} Units</div>
+                    <div className="text-2xl font-bold">{stats.campDonated} Units</div>
                     <p className="text-xs text-muted-foreground">
-                        Goal: 350 Units
+                        for {location}, {year}
                     </p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">
-                        Pending Acceptance
+                        Camp Pending
                     </CardTitle>
                     <BarChart className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                    <div className="text-2xl font-bold">{stats.registrations - stats.accepted - stats.rejected}</div>
+                    <div className="text-2xl font-bold">{stats.campPending}</div>
                     <p className="text-xs text-muted-foreground">
-                        donors waiting for processing
+                        waiting in {location}, {year}
                     </p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">
-                        Participating Blood Banks
+                        Camp Blood Banks
                     </CardTitle>
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                    <div className="text-2xl font-bold">{stats.bloodBanks}</div>
+                    <div className="text-2xl font-bold">{stats.campBloodBanks}</div>
                     <p className="text-xs text-muted-foreground">
                         in {location} for {year}
                     </p>
@@ -223,7 +232,7 @@ export default function Dashboard() {
                 <div className="mt-8">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Recent Registrations</CardTitle>
+                            <CardTitle>Recent Registrations ({location}, {year})</CardTitle>
                         </CardHeader>
                         <CardContent>
                             {stats.recent.length > 0 ? (
