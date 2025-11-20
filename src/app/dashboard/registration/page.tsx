@@ -56,15 +56,15 @@ export default function RegistrationPage() {
 
     const loadDataForCamp = (loc: string, yr: string) => {
         const allRegistrations: Registration[] = JSON.parse(sessionStorage.getItem('registrations') || '[]');
-        const campYear = yr === '2025-26' ? '2025-26' : parseInt(yr, 10);
-        const campRegistrations = allRegistrations.filter(r => r.location === loc && (r.year === campYear || r.year.toString() === yr));
+        const campYear = '2025-26';
+        const campRegistrations = allRegistrations.filter(r => r.location === loc && r.year.toString() === campYear);
         setRegistrations(campRegistrations);
         setNextRegId(generateRegistrationId(allRegistrations));
 
         const allAgenciesData: BloodBank[] = JSON.parse(sessionStorage.getItem('bloodBanks') || '[]');
         setAllAgencies(allAgenciesData);
         
-        const campAgencies = allAgenciesData.filter(b => b.location === loc && (b.year === campYear || b.year.toString() === yr));
+        const campAgencies = allAgenciesData.filter(b => b.location === loc && b.year.toString() === campYear);
         setAgencies(campAgencies);
 
         const limit = campAgencies.reduce((sum, bank) => sum + bank.quota, 0);
