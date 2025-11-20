@@ -134,7 +134,7 @@ export default function Dashboard() {
             </aside>
             <main className="flex-grow p-4 md:p-8">
                 <h2 className="text-3xl font-bold mb-6">Welcome, Admin - ({location}, {year})</h2>
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">
@@ -145,7 +145,35 @@ export default function Dashboard() {
                     <CardContent>
                     <div className="text-2xl font-bold">{stats.registrations}</div>
                     <p className="text-xs text-muted-foreground">
-                        {stats.accepted} accepted, {stats.rejected} rejected
+                        Total donors registered
+                    </p>
+                    </CardContent>
+                </Card>
+                 <Card className="border-green-500">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium text-green-600">
+                        Accepted
+                    </CardTitle>
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    </CardHeader>
+                    <CardContent>
+                    <div className="text-2xl font-bold">{stats.accepted}</div>
+                    <p className="text-xs text-muted-foreground">
+                        Donors approved
+                    </p>
+                    </CardContent>
+                </Card>
+                 <Card className="border-red-500">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium text-red-600">
+                        Rejected
+                    </CardTitle>
+                    <XCircle className="h-4 w-4 text-red-500" />
+                    </CardHeader>
+                    <CardContent>
+                    <div className="text-2xl font-bold">{stats.rejected}</div>
+                    <p className="text-xs text-muted-foreground">
+                        Donors declined
                     </p>
                     </CardContent>
                 </Card>
