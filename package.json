@@ -6,6 +6,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "dev": "nodemon server.js",
+    "build": "echo \"Build script not necessary for this project\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
