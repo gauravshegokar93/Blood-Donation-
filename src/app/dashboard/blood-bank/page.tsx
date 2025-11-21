@@ -13,7 +13,7 @@ import { PlusCircle, Edit, Trash2, Printer, Ban, X } from 'lucide-react';
 import { BloodBank } from '@/lib/mock-data';
 
 const locations = ['PUNE', 'UTTRAKHAND', 'SHEGAON', 'DHARWAD', 'Mumbai', 'Nagpur'];
-const MOCK_YEAR_FOR_DATA = 2024; // Year used to fetch initial data
+const MOCK_YEAR_FOR_DATA = "2025-26"; // Year used to fetch initial data
 
 export default function BloodBankPage() {
   const router = useRouter();
@@ -24,7 +24,7 @@ export default function BloodBankPage() {
   const [location, setLocation] = useState<string | null>(null);
   const [year, setYear] = useState<string | null>(null);
   
-  const initialFormState: Partial<Omit<BloodBank, 'id'>> = { name: '', location: '', counter: 0, quota: 0, year: '2025-26' };
+  const initialFormState: Partial<Omit<BloodBank, 'id'>> = { name: '', location: '', counter: 0, quota: 0, year: MOCK_YEAR_FOR_DATA };
   const [formState, setFormState] = useState<Partial<BloodBank>>(initialFormState);
 
   useEffect(() => {
@@ -44,7 +44,6 @@ export default function BloodBankPage() {
 
   const updateSessionStorage = (updatedCampBanks: BloodBank[]) => {
       const allBanks: BloodBank[] = JSON.parse(sessionStorage.getItem('bloodBanks') || '[]');
-      // Filter out old banks for this specific camp (location + year)
       const otherBanks = allBanks.filter(b => !(b.location === location && b.year.toString() === year));
       const newAllBanks = [...otherBanks, ...updatedCampBanks];
       sessionStorage.setItem('bloodBanks', JSON.stringify(newAllBanks));
@@ -83,16 +82,16 @@ export default function BloodBankPage() {
     e.preventDefault();
     if (!location || !year) return;
 
-    let updatedBanks;
-    const yearToSave = year;
+    let updatedCampBanks;
+    const yearToSave = MOCK_YEAR_FOR_DATA;
 
     if (formState.id) { // Editing existing
-      updatedBanks = bloodBanks.map(b => b.id === formState.id ? {...formState, year: yearToSave } as BloodBank : b);
+      updatedCampBanks = bloodBanks.map(b => b.id === formState.id ? {...formState, year: yearToSave } as BloodBank : b);
     } else { // Creating new
       const newId = Date.now(); // Simple unique ID
-      updatedBanks = [...bloodBanks, { ...formState, id: newId, year: yearToSave } as BloodBank];
+      updatedCampBanks = [...bloodBanks, { ...formState, id: newId, year: yearToSave } as BloodBank];
     }
-    updateSessionStorage(updatedBanks);
+    updateSessionStorage(updatedCampBanks);
     handleCancel();
   };
 
