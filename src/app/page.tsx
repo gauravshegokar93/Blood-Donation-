@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Droplets } from 'lucide-react';
 import { initializeMockData } from '@/lib/mock-data';
+import Link from 'next/link';
 
 const locations = ['Rudrapur', 'Dharwad', 'Pune', 'Shegaon'];
 const year = '2025-26';
@@ -35,8 +36,9 @@ export default function SessionStartPage() {
             <h1 className="text-2xl font-bold">Blood Bank Management</h1>
           </div>
           <nav className="space-x-4">
-             <a href="/home" className="hover:underline">Home</a>
-             <a href="/dashboard" className="hover:underline">Dashboard</a>
+             <Link href="/home" className="hover:underline">Home</Link>
+             <Link href="/director" className="hover:underline">Director View</Link>
+             <Link href="/dashboard" className="hover:underline">Dashboard</Link>
           </nav>
         </div>
       </header>
