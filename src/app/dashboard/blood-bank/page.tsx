@@ -36,18 +36,23 @@ export default function BloodBankPage() {
       setLocation(savedLocation);
       setYear(savedYear);
       const allBanks: BloodBank[] = JSON.parse(sessionStorage.getItem('bloodBanks') || '[]');
-      const campBanks = allBanks.filter(b => b.location === savedLocation && b.year.toString() === savedYear);
+      const campBanks = allBanks
+        .filter(b => b.location === savedLocation)
+        .map(b => ({ ...b, year: savedYear })); // Treat all banks for the location as part of the current camp year.
       setBloodBanks(campBanks);
       setFormState(prev => ({ ...prev, location: savedLocation, year: savedYear }));
     }
   }, [router]);
 
   const updateSessionStorage = (updatedCampBanks: BloodBank[]) => {
+      if (!location || !year) return;
       const allBanks: BloodBank[] = JSON.parse(sessionStorage.getItem('bloodBanks') || '[]');
-      const otherBanks = allBanks.filter(b => !(b.location === location && b.year.toString() === year));
+      // Filter out all old banks from the current camp location
+      const otherBanks = allBanks.filter(b => b.location !== location);
+      // Add the updated list of banks for the current camp
       const newAllBanks = [...otherBanks, ...updatedCampBanks];
       sessionStorage.setItem('bloodBanks', JSON.stringify(newAllBanks));
-      setBloodBanks(updatedCampBanks);
+      setBloodBanks(updatedCampBanks); // Update local state to re-render
   }
   
   const handleNew = () => {
