@@ -3,17 +3,15 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { PlusCircle, Edit, Trash2, Printer, Ban, X } from 'lucide-react';
 import { BloodBank } from '@/lib/mock-data';
 
-const locations = ['PUNE', 'UTTRAKHAND', 'SHEGAON', 'DHARWAD', 'Mumbai', 'Nagpur'];
-const MOCK_YEAR_FOR_DATA = "2025-26"; // Year used to fetch initial data
+const YEAR = '2025-26';
 
 export default function BloodBankPage() {
   const router = useRouter();
@@ -22,42 +20,33 @@ export default function BloodBankPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [location, setLocation] = useState<string | null>(null);
-  const [year, setYear] = useState<string | null>(null);
-  
-  const initialFormState: Partial<Omit<BloodBank, 'id'>> = { name: '', location: '', counter: 0, quota: 0, year: MOCK_YEAR_FOR_DATA };
+
+  const initialFormState: Partial<Omit<BloodBank, 'id'>> = { name: '', location: '', counter: 0, quota: 0, year: YEAR };
   const [formState, setFormState] = useState<Partial<BloodBank>>(initialFormState);
 
   useEffect(() => {
     const savedLocation = sessionStorage.getItem('bdcLocation');
-    const savedYear = sessionStorage.getItem('bdcYear');
-    if (!savedLocation || !savedYear) {
+    if (!savedLocation) {
       router.push('/');
     } else {
       setLocation(savedLocation);
-      setYear(savedYear);
-      const allBanks: BloodBank[] = JSON.parse(sessionStorage.getItem('bloodBanks') || '[]');
-      const campBanks = allBanks
-        .filter(b => b.location === savedLocation)
-        .map(b => ({ ...b, year: savedYear })); // Treat all banks for the location as part of the current camp year.
+      const bloodBankKey = `bloodBanks_${savedLocation}`;
+      const campBanks: BloodBank[] = JSON.parse(sessionStorage.getItem(bloodBankKey) || '[]');
       setBloodBanks(campBanks);
-      setFormState(prev => ({ ...prev, location: savedLocation, year: savedYear }));
+      setFormState(prev => ({ ...prev, location: savedLocation, year: YEAR }));
     }
   }, [router]);
 
   const updateSessionStorage = (updatedCampBanks: BloodBank[]) => {
-      if (!location || !year) return;
-      const allBanks: BloodBank[] = JSON.parse(sessionStorage.getItem('bloodBanks') || '[]');
-      // Filter out all old banks from the current camp location
-      const otherBanks = allBanks.filter(b => b.location !== location);
-      // Add the updated list of banks for the current camp
-      const newAllBanks = [...otherBanks, ...updatedCampBanks];
-      sessionStorage.setItem('bloodBanks', JSON.stringify(newAllBanks));
-      setBloodBanks(updatedCampBanks); // Update local state to re-render
+      if (!location) return;
+      const bloodBankKey = `bloodBanks_${location}`;
+      sessionStorage.setItem(bloodBankKey, JSON.stringify(updatedCampBanks));
+      setBloodBanks(updatedCampBanks);
   }
   
   const handleNew = () => {
     setSelectedBank(null);
-    setFormState({ ...initialFormState, location: location, year: year });
+    setFormState({ ...initialFormState, location: location, year: YEAR });
     setIsFormOpen(true);
   };
 
@@ -79,22 +68,21 @@ export default function BloodBankPage() {
   
   const handleCancel = () => {
     setSelectedBank(null);
-    setFormState({ ...initialFormState, location: location, year: year });
+    setFormState({ ...initialFormState, location: location, year: YEAR });
     setIsFormOpen(false);
   }
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!location || !year) return;
+    if (!location) return;
 
     let updatedCampBanks;
-    const yearToSave = MOCK_YEAR_FOR_DATA;
-
+    
     if (formState.id) { // Editing existing
-      updatedCampBanks = bloodBanks.map(b => b.id === formState.id ? {...formState, year: yearToSave } as BloodBank : b);
+      updatedCampBanks = bloodBanks.map(b => b.id === formState.id ? {...formState, year: YEAR, location: location } as BloodBank : b);
     } else { // Creating new
-      const newId = Date.now(); // Simple unique ID
-      updatedCampBanks = [...bloodBanks, { ...formState, id: newId, year: yearToSave } as BloodBank];
+      const newId = bloodBanks.length > 0 ? Math.max(...bloodBanks.map(b => b.id)) + 1 : 1;
+      updatedCampBanks = [...bloodBanks, { ...formState, id: newId, year: YEAR, location: location } as BloodBank];
     }
     updateSessionStorage(updatedCampBanks);
     handleCancel();
@@ -104,9 +92,11 @@ export default function BloodBankPage() {
     router.push('/dashboard');
   }
 
-  if (!location || !year) {
+  if (!location) {
     return <div>Loading session...</div>;
   }
+
+  const year = YEAR;
 
   return (
     <div className="container mx-auto p-4 md:p-8">
@@ -140,7 +130,7 @@ export default function BloodBankPage() {
         </CardHeader>
         <CardContent>
           {isFormOpen && (
-            <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 border rounded-lg mb-6 bg-slate-50">
+            <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border rounded-lg mb-6 bg-slate-50">
               <div className="space-y-2">
                 <Label htmlFor="srno">SrNo</Label>
                 <Input id="srno" value={formState?.id || 'Auto'} readOnly className="bg-gray-200"/>
@@ -151,18 +141,7 @@ export default function BloodBankPage() {
               </div>
                <div className="space-y-2">
                  <Label htmlFor="location">BDC Location</Label>
-                 <Select value={formState?.location || ''} onValueChange={(value) => setFormState({...formState, location: value})}>
-                  <SelectTrigger id="location">
-                    <SelectValue placeholder="Select Location" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {locations.map(loc => <SelectItem key={loc} value={loc}>{loc}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-               <div className="space-y-2 invisible">
-                <Label htmlFor="location-hidden">BDC Location</Label>
-                 <Input id="location-hidden" />
+                 <Input id="location" value={location || ''} readOnly className="bg-gray-200"/>
               </div>
 
               <div className="space-y-2">
@@ -173,7 +152,7 @@ export default function BloodBankPage() {
                 <Label htmlFor="quota">Quota / Limit</Label>
                 <Input id="quota" type="number" placeholder="e.g., 350" value={formState?.quota || ''} onChange={(e) => setFormState({...formState, quota: parseInt(e.target.value) || 0})} />
               </div>
-               <div className="md:col-span-5 flex justify-end space-x-2 pt-2">
+               <div className="md:col-span-4 flex justify-end space-x-2 pt-2">
                     <Button type="button" variant="outline" onClick={handleCancel}>Cancel</Button>
                     <Button type="submit">Save</Button>
                 </div>

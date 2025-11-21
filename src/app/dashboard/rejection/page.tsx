@@ -20,12 +20,13 @@ const rejectionReasons = [
     "Other"
 ];
 
+const YEAR = '2025-26';
+
 export default function RejectionPage() {
     const router = useRouter();
     const [location, setLocation] = useState<string | null>(null);
-    const [year, setYear] = useState<string | null>(null);
 
-    const [allRegistrations, setAllRegistrations] = useState<Registration[]>([]);
+    const [allCampRegistrations, setAllCampRegistrations] = useState<Registration[]>([]);
     const [rejectedDonors, setRejectedDonors] = useState<Registration[]>([]);
     
     const [registrationId, setRegistrationId] = useState('');
@@ -33,26 +34,28 @@ export default function RejectionPage() {
     const [reason, setReason] = useState('');
     const [isIdValid, setIsIdValid] = useState(false);
 
+    const loadData = (loc: string) => {
+        const registrationKey = `registrations_${loc}`;
+        const currentRegistrations: Registration[] = JSON.parse(sessionStorage.getItem(registrationKey) || '[]');
+        setAllCampRegistrations(currentRegistrations);
+
+        const campRejectedDonors = currentRegistrations.filter(r => r.status === 'REJECTED');
+        setRejectedDonors(campRejectedDonors);
+    };
+
     useEffect(() => {
         const savedLocation = sessionStorage.getItem('bdcLocation');
-        const savedYear = sessionStorage.getItem('bdcYear');
-        if (!savedLocation || !savedYear) {
+        if (!savedLocation) {
             router.push('/');
         } else {
             setLocation(savedLocation);
-            setYear(savedYear);
-            loadData(savedLocation, savedYear);
+            loadData(savedLocation);
         }
     }, [router]);
 
     useEffect(() => {
-        if (registrationId && allRegistrations.length > 0) {
-            const campYear = year === '2025-26' ? '2025-26' : parseInt(year as string, 10);
-            const donor = allRegistrations.find(r => 
-                r.id === registrationId && 
-                r.location === location && 
-                (r.year === campYear || r.year.toString() === year)
-            );
+        if (registrationId) {
+            const donor = allCampRegistrations.find(r => r.id === registrationId);
             if (donor) {
                 setDonorName(donor.name);
                 setIsIdValid(true);
@@ -64,59 +67,54 @@ export default function RejectionPage() {
             setDonorName('');
             setIsIdValid(false);
         }
-    }, [registrationId, allRegistrations, location, year]);
-
-    const loadData = (loc: string, yr: string) => {
-        const currentRegistrations: Registration[] = JSON.parse(sessionStorage.getItem('registrations') || '[]');
-        setAllRegistrations(currentRegistrations);
-        const campYear = yr === '2025-26' ? '2025-26' : parseInt(yr, 10);
-
-        const campRejectedDonors = currentRegistrations.filter(r => 
-            r.status === 'REJECTED' && 
-            r.location === loc &&
-            (r.year === campYear || r.year.toString() === yr)
-        );
-        setRejectedDonors(campRejectedDonors);
-    };
+    }, [registrationId, allCampRegistrations]);
 
     const handleReject = (e: React.FormEvent) => {
         e.preventDefault();
         const regId = registrationId;
-        if (!regId || !reason || !location || !year) {
+        if (!regId || !reason || !location) {
             alert('Please enter a Registration ID and select a reason.');
             return;
         }
 
-        const registrationIndex = allRegistrations.findIndex(r => r.id === regId && r.location === location && (r.year.toString() === year || r.year === (year === '2025-26' ? '2025-26' : parseInt(year, 10))));
+        const registrationKey = `registrations_${location}`;
+        const registrationIndex = allCampRegistrations.findIndex(r => r.id === regId);
 
         if (registrationIndex === -1) {
             alert(`Registration ID "${regId}" not found for this camp.`);
             return;
         }
         
-        if(allRegistrations[registrationIndex].status !== 'REGISTERED') {
-            alert(`Registration ID "${regId}" cannot be rejected. Current status: ${allRegistrations[registrationIndex].status}.`);
+        if(allCampRegistrations[registrationIndex].status !== 'REGISTERED' && allCampRegistrations[registrationIndex].status !== 'ACCEPTED') {
+            alert(`Registration ID "${regId}" cannot be rejected. Current status: ${allCampRegistrations[registrationIndex].status}.`);
             return;
         }
         
-        const updatedRegistrations = [...allRegistrations];
+        const updatedRegistrations = [...allCampRegistrations];
         updatedRegistrations[registrationIndex].status = 'REJECTED';
         updatedRegistrations[registrationIndex].rejectionReason = reason;
         updatedRegistrations[registrationIndex].rejectionDate = new Date().toISOString().split('T')[0];
         
-        sessionStorage.setItem('registrations', JSON.stringify(updatedRegistrations));
+        sessionStorage.setItem(registrationKey, JSON.stringify(updatedRegistrations));
         
         alert(`Registration ID "${registrationId}" has been rejected. Reason: ${reason}.`);
         
         // Reset form and reload data
         setRegistrationId(''); 
         setReason('');
-        loadData(location, year);
+        loadData(location);
     };
+
+    const handleRowClick = (donor: Registration) => {
+        setRegistrationId(donor.id);
+        setDonorName(donor.name);
+        setReason(donor.rejectionReason || '');
+    }
     
-    if (!location || !year) {
+    if (!location) {
         return <div>Loading session...</div>;
     }
+    const year = YEAR;
 
     return (
         <div className="container mx-auto p-4 md:p-8 flex flex-col items-center">
@@ -181,8 +179,10 @@ export default function RejectionPage() {
                                 <TableRow>
                                     <TableHead>Reg. ID</TableHead>
                                     <TableHead>Donor Name</TableHead>
-                                    <TableHead>Agency</TableHead>
+                                    <TableHead>Gender</TableHead>
+                                    <TableHead>Age</TableHead>
                                     <TableHead>Blood Group</TableHead>
+                                    <TableHead>Agency</TableHead>
                                     <TableHead>Reason</TableHead>
                                     <TableHead>Date</TableHead>
                                 </TableRow>
@@ -190,18 +190,20 @@ export default function RejectionPage() {
                             <TableBody>
                                 {rejectedDonors.length > 0 ? (
                                     rejectedDonors.map(donor => (
-                                        <TableRow key={donor.id}>
+                                        <TableRow key={donor.id} onClick={() => handleRowClick(donor)} className="cursor-pointer hover:bg-gray-100">
                                             <TableCell>{donor.id}</TableCell>
                                             <TableCell>{donor.name}</TableCell>
-                                            <TableCell>{donor.agency}</TableCell>
+                                            <TableCell>{donor.gender}</TableCell>
+                                            <TableCell>{donor.age}</TableCell>
                                             <TableCell>{donor.bloodGroup}</TableCell>
+                                            <TableCell>{donor.agency}</TableCell>
                                             <TableCell>{donor.rejectionReason}</TableCell>
                                             <TableCell>{donor.rejectionDate}</TableCell>
                                         </TableRow>
                                     ))
                                 ) : (
                                     <TableRow>
-                                        <TableCell colSpan={6} className="text-center">No rejected donors found for this camp.</TableCell>
+                                        <TableCell colSpan={8} className="text-center">No rejected donors found for this camp.</TableCell>
                                     </TableRow>
                                 )}
                             </TableBody>

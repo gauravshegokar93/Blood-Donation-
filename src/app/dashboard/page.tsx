@@ -8,12 +8,11 @@ import { useEffect, useState } from 'react';
 import Link from "next/link";
 import { Registration, BloodBank } from "@/lib/mock-data";
 
-const MOCK_YEAR_FOR_DATA = 2024;
+const YEAR = '2025-26';
 
 export default function Dashboard() {
     const router = useRouter();
     const [location, setLocation] = useState<string | null>(null);
-    const [year, setYear] = useState<string | null>(null);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [stats, setStats] = useState({
         totalRegistrations: 0,
@@ -27,35 +26,30 @@ export default function Dashboard() {
 
     useEffect(() => {
         const savedLocation = sessionStorage.getItem('bdcLocation');
-        const savedYear = sessionStorage.getItem('bdcYear');
-
-        if (!savedLocation || !savedYear) {
+        
+        if (!savedLocation) {
             router.push('/');
         } else {
             setLocation(savedLocation);
-            setYear(savedYear);
+            const year = YEAR;
 
-            // Global stats
-            const allRegistrations: Registration[] = JSON.parse(sessionStorage.getItem('registrations') || '[]');
-            const totalRegistrations = allRegistrations.length;
-            const totalAccepted = allRegistrations.filter(r => r.status === 'ACCEPTED').length;
-            const totalRejected = allRegistrations.filter(r => r.status === 'REJECTED').length;
+            const registrationKey = `registrations_${savedLocation}`;
+            const bloodBankKey = `bloodBanks_${savedLocation}`;
 
-            // Camp-specific stats
-            const campRegistrations = allRegistrations.filter(r => r.location === savedLocation && (r.year === MOCK_YEAR_FOR_DATA || r.year.toString() === savedYear));
-            const campAccepted = campRegistrations.filter(r => r.status === 'ACCEPTED').length;
-            const campRejected = campRegistrations.filter(r => r.status === 'REJECTED').length;
+            const campRegistrations: Registration[] = JSON.parse(sessionStorage.getItem(registrationKey) || '[]');
+            const campBloodBanks: BloodBank[] = JSON.parse(sessionStorage.getItem(bloodBankKey) || '[]');
+
             const campRegisteredCount = campRegistrations.length;
-
-            const allBloodBanks: BloodBank[] = JSON.parse(sessionStorage.getItem('bloodBanks') || '[]');
-            const campBloodBanks = allBloodBanks.filter(b => b.location === savedLocation && (b.year === MOCK_YEAR_FOR_DATA || b.year.toString() === savedYear));
+            const campAcceptedCount = campRegistrations.filter(r => r.status === 'ACCEPTED').length;
+            const campRejectedCount = campRegistrations.filter(r => r.status === 'REJECTED').length;
+            const campDonatedCount = campRegistrations.filter(r => r.status === 'DONATED').length;
 
             setStats({
-                totalRegistrations: totalRegistrations,
-                totalAccepted: totalAccepted,
-                totalRejected: totalRejected,
-                campDonated: campRegistrations.filter(r => r.status === 'DONATED').length,
-                campPending: campRegisteredCount - campAccepted - campRejected,
+                totalRegistrations: campRegisteredCount, // Only show current location stats
+                totalAccepted: campAcceptedCount,
+                totalRejected: campRejectedCount,
+                campDonated: campDonatedCount,
+                campPending: campRegisteredCount - campAcceptedCount - campRejectedCount - campDonatedCount,
                 campBloodBanks: campBloodBanks.length,
                 recent: campRegistrations.slice(-5).reverse(),
             });
@@ -67,14 +61,14 @@ export default function Dashboard() {
         router.push('/');
     };
     
-    if (!location || !year) {
+    if (!location) {
         return (
             <div className="flex items-center justify-center min-h-screen">
                 <p>Loading...</p>
             </div>
         );
     }
-
+    const year = YEAR;
   return (
     <div className="flex flex-col min-h-screen bg-background font-sans">
         <header className="bg-primary text-primary-foreground p-4 shadow-md sticky top-0 z-40">
@@ -157,7 +151,7 @@ export default function Dashboard() {
                     <CardContent>
                     <div className="text-2xl font-bold">{stats.totalRegistrations}</div>
                     <p className="text-xs text-muted-foreground">
-                        Total donors registered (all branches)
+                        Donors registered in {location}
                     </p>
                     </CardContent>
                 </Card>
@@ -171,7 +165,7 @@ export default function Dashboard() {
                     <CardContent>
                     <div className="text-2xl font-bold">{stats.totalAccepted}</div>
                     <p className="text-xs text-muted-foreground">
-                        Donors approved (all branches)
+                        Donors approved in {location}
                     </p>
                     </CardContent>
                 </Card>
@@ -185,7 +179,7 @@ export default function Dashboard() {
                     <CardContent>
                     <div className="text-2xl font-bold">{stats.totalRejected}</div>
                     <p className="text-xs text-muted-foreground">
-                        Donors declined (all branches)
+                        Donors declined in {location}
                     </p>
                     </CardContent>
                 </Card>

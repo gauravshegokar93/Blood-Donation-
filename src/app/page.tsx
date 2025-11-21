@@ -8,8 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Droplets } from 'lucide-react';
 import { initializeMockData } from '@/lib/mock-data';
 
-// Placeholder data - we will fetch this from the database later
-const locations = ['Mumbai', 'Pune', 'Nagpur'];
+const locations = ['Rudrapur', 'Dharwad', 'Pune', 'Shegaon'];
 const year = '2025-26';
 
 export default function SessionStartPage() {
@@ -20,7 +19,7 @@ export default function SessionStartPage() {
     if (location && year) {
       sessionStorage.setItem('bdcLocation', location);
       sessionStorage.setItem('bdcYear', year);
-      initializeMockData(location, 2024); // Keep using a valid year for mock data retrieval
+      initializeMockData(location);
       router.push('/dashboard');
     } else {
       alert('Please select a location.');

@@ -13,17 +13,18 @@ import { ArrowUp, ArrowDown, PlusCircle, Edit, Trash2, Printer, Ban, X } from 'l
 import { Registration, BloodBank } from '@/lib/mock-data';
 
 const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'Other'];
+const genders = ['Male', 'Female', 'Other'];
 type SortKey = keyof Registration;
-const MOCK_YEAR_FOR_DATA = 2024; // This is a constant for the mock data structure, not the displayed year.
+const YEAR = '2025-26';
 
-function generateRegistrationId(existingRegistrations: Registration[]): string {
+function generateRegistrationId(location: string, existingRegistrations: Registration[]): string {
     const today = new Date();
     const year = today.getFullYear();
     const month = (today.getMonth() + 1).toString().padStart(2, '0');
     const day = today.getDate().toString().padStart(2, '0');
     const datePrefix = `REG-${year}${month}${day}-`;
 
-    const todayRegistrations = existingRegistrations.filter(r => typeof r.id === 'string' && r.id.startsWith(datePrefix));
+    const todayRegistrations = existingRegistrations.filter(r => r.id.startsWith(datePrefix));
     
     const nextIdNumber = todayRegistrations.length + 1;
     const nextId = nextIdNumber.toString().padStart(4, '0');
@@ -35,16 +36,14 @@ function generateRegistrationId(existingRegistrations: Registration[]): string {
 export default function RegistrationPage() {
     const router = useRouter();
     const [location, setLocation] = useState<string | null>(null);
-    const [year, setYear] = useState<string | null>(null);
 
     const [registrations, setRegistrations] = useState<Registration[]>([]);
-    const [allAgencies, setAllAgencies] = useState<BloodBank[]>([]);
     const [agencies, setAgencies] = useState<BloodBank[]>([]);
-    const [stats, setStats] = useState({ registered: 0, accepted: 0, rejected: 0, donated: 0, limit: 0 });
+    const [stats, setStats] = useState({ accepted: 0, limit: 0 });
     const [agencyCounts, setAgencyCounts] = useState<{[key: string]: number}>({});
 
-    const initialNewRegState = { name: '', bloodGroup: '', mobile: '', agency: '' };
-    const [formState, setFormState] = useState(initialNewRegState);
+    const initialNewRegState = { name: '', bloodGroup: '', mobile: '', agency: '', age: undefined, gender: undefined };
+    const [formState, setFormState] = useState<{name: string, bloodGroup: string, mobile: string, agency: string, age?: number, gender?: 'Male' | 'Female' | 'Other'}>(initialNewRegState);
     const [nextRegId, setNextRegId] = useState('');
     
     const [sortKey, setSortKey] = useState<SortKey>('id');
@@ -54,26 +53,21 @@ export default function RegistrationPage() {
     const [isEditing, setIsEditing] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-    const loadDataForCamp = (loc: string, yr: string) => {
-        const allRegistrations: Registration[] = JSON.parse(sessionStorage.getItem('registrations') || '[]');
-        const campYear = '2025-26';
-        const campRegistrations = allRegistrations.filter(r => r.location === loc && r.year.toString() === campYear);
-        setRegistrations(campRegistrations);
-        setNextRegId(generateRegistrationId(allRegistrations));
+    const loadDataForCamp = (loc: string) => {
+        const registrationKey = `registrations_${loc}`;
+        const bloodBankKey = `bloodBanks_${loc}`;
 
-        const allAgenciesData: BloodBank[] = JSON.parse(sessionStorage.getItem('bloodBanks') || '[]');
-        setAllAgencies(allAgenciesData);
-        
-        const campAgencies = allAgenciesData.filter(b => b.location === loc && b.year.toString() === campYear);
+        const campRegistrations: Registration[] = JSON.parse(sessionStorage.getItem(registrationKey) || '[]');
+        setRegistrations(campRegistrations);
+        setNextRegId(generateRegistrationId(loc, campRegistrations));
+
+        const campAgencies: BloodBank[] = JSON.parse(sessionStorage.getItem(bloodBankKey) || '[]');
         setAgencies(campAgencies);
 
         const limit = campAgencies.reduce((sum, bank) => sum + bank.quota, 0);
         const campAccepted = campRegistrations.filter(r => r.status === 'ACCEPTED').length;
         setStats({
-            registered: campRegistrations.length,
             accepted: campAccepted,
-            rejected: campRegistrations.filter(r => r.status === 'REJECTED').length,
-            donated: campRegistrations.filter(r => r.status === 'DONATED').length,
             limit: limit
         });
         
@@ -86,27 +80,30 @@ export default function RegistrationPage() {
 
     useEffect(() => {
         const savedLocation = sessionStorage.getItem('bdcLocation');
-        const savedYear = sessionStorage.getItem('bdcYear');
-        if (!savedLocation || !savedYear) {
+        if (!savedLocation) {
             router.push('/');
             return;
         }
         
         setLocation(savedLocation);
-        setYear(savedYear);
-        loadDataForCamp(savedLocation, savedYear);
+        loadDataForCamp(savedLocation);
+
+        const handleFocus = () => loadDataForCamp(savedLocation);
+        window.addEventListener('focus', handleFocus);
+        return () => window.removeEventListener('focus', handleFocus);
+
     }, [router]);
     
     const handleSaveRegistration = (e: React.FormEvent) => {
         e.preventDefault();
-        if (formState.name && formState.bloodGroup && formState.mobile && formState.agency && location && year) {
-            const allRegistrations: Registration[] = JSON.parse(sessionStorage.getItem('registrations') || '[]');
+        if (formState.name && formState.bloodGroup && formState.mobile && formState.agency && location) {
+            const registrationKey = `registrations_${location}`;
+            const campRegistrations: Registration[] = JSON.parse(sessionStorage.getItem(registrationKey) || '[]');
             
             let updatedRegistrations;
-            const yearToSave = '2025-26';
 
             if (isEditing && selectedRegistration) {
-                 updatedRegistrations = allRegistrations.map(r => r.id === selectedRegistration.id ? { ...selectedRegistration, ...formState, year: yearToSave, location: location } : r);
+                 updatedRegistrations = campRegistrations.map(r => r.id === selectedRegistration.id ? { ...selectedRegistration, ...formState, year: YEAR, location: location } : r);
             } else {
                 const newReg: Registration = {
                     id: nextRegId,
@@ -114,16 +111,18 @@ export default function RegistrationPage() {
                     bloodGroup: formState.bloodGroup,
                     mobile: formState.mobile,
                     agency: formState.agency,
+                    age: formState.age,
+                    gender: formState.gender,
                     location: location,
-                    year: yearToSave,
+                    year: YEAR,
                     status: 'REGISTERED',
                 };
-                updatedRegistrations = [...allRegistrations, newReg];
+                updatedRegistrations = [...campRegistrations, newReg];
             }
             
-            sessionStorage.setItem('registrations', JSON.stringify(updatedRegistrations));
+            sessionStorage.setItem(registrationKey, JSON.stringify(updatedRegistrations));
             handleCancel();
-            loadDataForCamp(location, year);
+            loadDataForCamp(location);
         }
     };
     
@@ -149,20 +148,23 @@ export default function RegistrationPage() {
                 name: selectedRegistration.name,
                 bloodGroup: selectedRegistration.bloodGroup,
                 mobile: selectedRegistration.mobile,
-                agency: selectedRegistration.agency
+                agency: selectedRegistration.agency,
+                age: selectedRegistration.age,
+                gender: selectedRegistration.gender,
             });
         }
     };
     
     const handleDelete = () => {
-        if (selectedRegistration && location && year) {
-            const allRegistrations: Registration[] = JSON.parse(sessionStorage.getItem('registrations') || '[]');
-            const updatedRegistrations = allRegistrations.filter(r => r.id !== selectedRegistration.id);
-            sessionStorage.setItem('registrations', JSON.stringify(updatedRegistrations));
+        if (selectedRegistration && location) {
+            const registrationKey = `registrations_${location}`;
+            const campRegistrations: Registration[] = JSON.parse(sessionStorage.getItem(registrationKey) || '[]');
+            const updatedRegistrations = campRegistrations.filter(r => r.id !== selectedRegistration.id);
+            sessionStorage.setItem(registrationKey, JSON.stringify(updatedRegistrations));
             
             setIsDeleteDialogOpen(false);
             setSelectedRegistration(null);
-            loadDataForCamp(location, year);
+            loadDataForCamp(location);
         }
     };
 
@@ -183,6 +185,7 @@ export default function RegistrationPage() {
     const sortedRegistrations = [...registrations].sort((a, b) => {
         const aValue = a[sortKey];
         const bValue = b[sortKey];
+        if (!aValue || !bValue) return 0;
         if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
         if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
         return 0;
@@ -193,9 +196,10 @@ export default function RegistrationPage() {
         return sortOrder === 'asc' ? <ArrowUp className="h-4 w-4 ml-1 inline" /> : <ArrowDown className="h-4 w-4 ml-1 inline" />;
     };
 
-    if (!location || !year) {
+    if (!location) {
         return <div>Loading session...</div>;
     }
+    const year = YEAR;
 
     return (
         <div className="container mx-auto p-4 md:p-8">
@@ -254,7 +258,7 @@ export default function RegistrationPage() {
                                             <SelectValue placeholder="Select Agency" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {allAgencies.map(a => <SelectItem key={a.id} value={a.name}>{a.name}</SelectItem>)}
+                                            {agencies.map(a => <SelectItem key={a.id} value={a.name}>{a.name}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -278,6 +282,23 @@ export default function RegistrationPage() {
                                 <div className="space-y-2">
                                     <Label htmlFor="mobile">Mobile No</Label>
                                     <Input id="mobile" type="tel" placeholder="Enter 10-digit number" value={formState.mobile} onChange={e => setFormState({...formState, mobile: e.target.value})} required pattern="[0-9]{10}" />
+                                </div>
+                            </div>
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="gender">Gender</Label>
+                                    <Select value={formState.gender} onValueChange={(value) => setFormState({...formState, gender: value as any})}>
+                                        <SelectTrigger id="gender">
+                                            <SelectValue placeholder="Select Gender" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {genders.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="age">Age</Label>
+                                    <Input id="age" type="number" placeholder="Enter age" value={formState.age || ''} onChange={e => setFormState({...formState, age: parseInt(e.target.value) || undefined})} />
                                 </div>
                             </div>
                             <div className="flex items-center justify-between pt-2">

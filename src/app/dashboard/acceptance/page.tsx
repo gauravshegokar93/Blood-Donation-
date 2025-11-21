@@ -8,56 +8,56 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Registration } from '@/lib/mock-data';
 
-const MOCK_YEAR_FOR_DATA = 2024;
+const YEAR = '2025-26';
 
 export default function AcceptancePage() {
     const router = useRouter();
     const [location, setLocation] = useState<string | null>(null);
-    const [year, setYear] = useState<string | null>(null);
     const [registrationId, setRegistrationId] = useState('');
 
     useEffect(() => {
         const savedLocation = sessionStorage.getItem('bdcLocation');
-        const savedYear = sessionStorage.getItem('bdcYear');
-        if (!savedLocation || !savedYear) {
+        if (!savedLocation) {
             router.push('/');
         } else {
             setLocation(savedLocation);
-            setYear(savedYear);
         }
     }, [router]);
     
     const handleAccept = (e: React.FormEvent) => {
         e.preventDefault();
         const regId = registrationId;
-        if (!regId || !location || !year) {
+        if (!regId || !location) {
             alert('Please enter a valid Registration ID.');
             return;
         }
 
-        const allRegistrations: Registration[] = JSON.parse(sessionStorage.getItem('registrations') || '[]');
-        const registrationIndex = allRegistrations.findIndex(r => r.id === regId && r.location === location && (r.year === MOCK_YEAR_FOR_DATA || r.year.toString() === year));
+        const registrationKey = `registrations_${location}`;
+        const campRegistrations: Registration[] = JSON.parse(sessionStorage.getItem(registrationKey) || '[]');
+        const registrationIndex = campRegistrations.findIndex(r => r.id === regId);
 
         if (registrationIndex === -1) {
             alert(`Registration ID "${regId}" not found for this camp.`);
             return;
         }
         
-        if(allRegistrations[registrationIndex].status !== 'REGISTERED') {
-            alert(`Registration ID "${regId}" cannot be accepted. Current status: ${allRegistrations[registrationIndex].status}.`);
+        if(campRegistrations[registrationIndex].status !== 'REGISTERED') {
+            alert(`Registration ID "${regId}" cannot be accepted. Current status: ${campRegistrations[registrationIndex].status}.`);
             return;
         }
         
-        allRegistrations[registrationIndex].status = 'ACCEPTED';
-        sessionStorage.setItem('registrations', JSON.stringify(allRegistrations));
+        campRegistrations[registrationIndex].status = 'ACCEPTED';
+        sessionStorage.setItem(registrationKey, JSON.stringify(campRegistrations));
         
         alert(`Registration ID "${regId}" has been accepted. The dashboard statistics will be updated.`);
         setRegistrationId(''); // Reset input
     };
     
-    if (!location || !year) {
+    if (!location) {
         return <div>Loading session...</div>;
     }
+
+    const year = YEAR;
 
     return (
         <div className="container mx-auto p-4 md:p-8 flex items-center justify-center min-h-[calc(100vh-200px)]">
