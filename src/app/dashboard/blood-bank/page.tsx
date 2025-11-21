@@ -24,7 +24,7 @@ export default function BloodBankPage() {
   const [location, setLocation] = useState<string | null>(null);
   const [year, setYear] = useState<string | null>(null);
   
-  const initialFormState: Omit<BloodBank, 'id'> = { name: '', location: '', counter: 0, quota: 0, year: MOCK_YEAR_FOR_DATA };
+  const initialFormState: Partial<Omit<BloodBank, 'id'>> = { name: '', location: '', counter: 0, quota: 0, year: '2025-26' };
   const [formState, setFormState] = useState<Partial<BloodBank>>(initialFormState);
 
   useEffect(() => {
@@ -36,25 +36,24 @@ export default function BloodBankPage() {
       setLocation(savedLocation);
       setYear(savedYear);
       const allBanks: BloodBank[] = JSON.parse(sessionStorage.getItem('bloodBanks') || '[]');
-      // Show banks for the selected location, but from a consistent mock data year
-      const campBanks = allBanks.filter(b => b.location === savedLocation && (b.year === MOCK_YEAR_FOR_DATA || b.year.toString() === savedYear));
+      const campBanks = allBanks.filter(b => b.location === savedLocation && b.year.toString() === savedYear);
       setBloodBanks(campBanks);
-      setFormState(prev => ({ ...prev, location: savedLocation, year: MOCK_YEAR_FOR_DATA }));
+      setFormState(prev => ({ ...prev, location: savedLocation, year: savedYear }));
     }
   }, [router]);
 
-  const updateSessionStorage = (updatedBanks: BloodBank[]) => {
+  const updateSessionStorage = (updatedCampBanks: BloodBank[]) => {
       const allBanks: BloodBank[] = JSON.parse(sessionStorage.getItem('bloodBanks') || '[]');
-      // Filter out old banks for this specific camp (location + MOCK_YEAR)
-      const otherBanks = allBanks.filter(b => !(b.location === location && (b.year === MOCK_YEAR_FOR_DATA || b.year.toString() === year)));
-      const newAllBanks = [...otherBanks, ...updatedBanks];
+      // Filter out old banks for this specific camp (location + year)
+      const otherBanks = allBanks.filter(b => !(b.location === location && b.year.toString() === year));
+      const newAllBanks = [...otherBanks, ...updatedCampBanks];
       sessionStorage.setItem('bloodBanks', JSON.stringify(newAllBanks));
-      setBloodBanks(updatedBanks);
+      setBloodBanks(updatedCampBanks);
   }
   
   const handleNew = () => {
     setSelectedBank(null);
-    setFormState({ ...initialFormState, location: location, year: MOCK_YEAR_FOR_DATA });
+    setFormState({ ...initialFormState, location: location, year: year });
     setIsFormOpen(true);
   };
 
@@ -76,14 +75,16 @@ export default function BloodBankPage() {
   
   const handleCancel = () => {
     setSelectedBank(null);
-    setFormState({ ...initialFormState, location: location, year: MOCK_YEAR_FOR_DATA });
+    setFormState({ ...initialFormState, location: location, year: year });
     setIsFormOpen(false);
   }
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!location || !year) return;
+
     let updatedBanks;
-    const yearToSave = year === '2025-26' ? '2025-26' : MOCK_YEAR_FOR_DATA;
+    const yearToSave = year;
 
     if (formState.id) { // Editing existing
       updatedBanks = bloodBanks.map(b => b.id === formState.id ? {...formState, year: yearToSave } as BloodBank : b);
