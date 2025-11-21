@@ -31,7 +31,7 @@ export default function BloodBankPage() {
     } else {
       setLocation(savedLocation);
       const bloodBankKey = `bloodBanks_${savedLocation}`;
-      const campBanks: BloodBank[] = JSON.parse(sessionStorage.getItem(bloodBankKey) || '[]');
+      const campBanks: BloodBank[] = JSON.parse(sessionStorage.getItem(bloodBankKey) || '[]').map((b: BloodBank) => ({...b, year: YEAR}));
       setBloodBanks(campBanks);
       setFormState(prev => ({ ...prev, location: savedLocation, year: YEAR }));
     }
@@ -45,6 +45,7 @@ export default function BloodBankPage() {
   }
   
   const handleNew = () => {
+    if (!location) return;
     setSelectedBank(null);
     setFormState({ ...initialFormState, location: location, year: YEAR });
     setIsFormOpen(true);
@@ -67,6 +68,7 @@ export default function BloodBankPage() {
   };
   
   const handleCancel = () => {
+    if (!location) return;
     setSelectedBank(null);
     setFormState({ ...initialFormState, location: location, year: YEAR });
     setIsFormOpen(false);
