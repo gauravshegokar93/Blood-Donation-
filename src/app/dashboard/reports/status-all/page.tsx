@@ -74,7 +74,7 @@ export default function BDC_StatusAllPage() {
         return <div>Loading session...</div>;
     }
 
-    const getChartOptions = (location: string) => ({
+    const getChartOptions = () => ({
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
@@ -85,13 +85,13 @@ export default function BDC_StatusAllPage() {
                 display: false,
             },
             datalabels: {
-                anchor: 'end' as const,
-                align: 'top' as const,
+                anchor: 'center' as const,
+                align: 'center' as const,
+                color: 'white',
                 font: {
                     weight: 'bold' as const,
                     size: 14,
                 },
-                color: '#333',
                  formatter: (value: number) => value > 0 ? value : '',
             },
         },
@@ -102,7 +102,19 @@ export default function BDC_StatusAllPage() {
                 grid: { drawOnChartArea: false, }
             },
             x: {
-                grid: { display: false, }
+                grid: { display: false, },
+                ticks: {
+                    color: '#333',
+                    font: {
+                        weight: 'bold' as const,
+                    }
+                }
+            }
+        },
+        elements: {
+            bar: {
+                borderWidth: 2,
+                borderRadius: 4,
             }
         }
     });
@@ -114,7 +126,16 @@ export default function BDC_StatusAllPage() {
                 label: 'Registrations',
                 data: [item.total, item.accepted, item.rejected],
                 backgroundColor: [
-                    locationColors[item.location]?.bg || 'rgba(156, 163, 175, 0.7)',
+                    (context: any) => {
+                        const chart = context.chart;
+                        const {ctx, chartArea} = chart;
+                        if (!chartArea) { return; }
+                        const baseColor = locationColors[item.location]?.bg || 'rgba(156, 163, 175, 0.7)';
+                        const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+                        gradient.addColorStop(0, baseColor.replace('0.7', '0.9'));
+                        gradient.addColorStop(1, baseColor.replace('0.7', '0.4'));
+                        return gradient;
+                    },
                     'rgba(74, 222, 128, 0.7)',
                     'rgba(248, 113, 113, 0.7)',
                 ],
@@ -123,7 +144,7 @@ export default function BDC_StatusAllPage() {
                     'rgba(34, 197, 94, 1)',
                     'rgba(239, 68, 68, 1)',
                 ],
-                borderWidth: 1,
+                borderWidth: 2,
             },
         ],
     });
@@ -139,13 +160,13 @@ export default function BDC_StatusAllPage() {
             </div>
              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
                 {reportData.map(item => (
-                    <Card key={item.location} className="shadow-md hover:shadow-lg transition-shadow duration-300">
+                    <Card key={item.location} className="shadow-md hover:shadow-lg transition-shadow duration-300 border-l-4" style={{borderLeftColor: locationColors[item.location]?.border}}>
                         <CardHeader>
                             <CardTitle style={{color: locationColors[item.location]?.border}}>{item.location}</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <div className="h-64 relative">
-                                <Bar options={getChartOptions(item.location)} data={getChartData(item)} />
+                                <Bar options={getChartOptions()} data={getChartData(item)} />
                             </div>
                         </CardContent>
                     </Card>
