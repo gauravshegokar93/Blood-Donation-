@@ -119,7 +119,14 @@ export default function BDC_StatusAllPage() {
         }
     });
 
-    const getChartData = (item: LocationStats) => ({
+    const getChartData = (item: LocationStats) => {
+      const colors = [
+          locationColors[item.location] || locationColors['Pune'],
+          { base: 'rgba(34, 197, 94, 1)', light: 'rgba(134, 239, 172, 1)', border: 'rgba(22, 163, 74, 1)' }, // Accepted Green
+          { base: 'rgba(239, 68, 68, 1)', light: 'rgba(252, 165, 165, 1)', border: 'rgba(220, 38, 38, 1)' }  // Rejected Red
+      ];
+
+      return {
         labels: ['Total', 'Accepted', 'Rejected'],
         datasets: [
             {
@@ -130,27 +137,20 @@ export default function BDC_StatusAllPage() {
                     const {ctx, chartArea, dataIndex} = chart;
                     if (!chartArea) { return; }
 
-                    const colors = [
-                        locationColors[item.location] || locationColors['Pune'],
-                        { base: 'rgba(34, 197, 94, 1)', light: 'rgba(134, 239, 172, 1)' }, // Accepted Green
-                        { base: 'rgba(239, 68, 68, 1)', light: 'rgba(252, 165, 165, 1)' }  // Rejected Red
-                    ];
-                    
                     const selectedColor = colors[dataIndex];
+                    if (!selectedColor) return 'rgba(0,0,0,0.1)'; // Fallback color
+
                     const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
                     gradient.addColorStop(0, selectedColor.base);
                     gradient.addColorStop(1, selectedColor.light);
                     return gradient;
                 },
-                borderColor: [
-                     locationColors[item.location]?.border || 'rgba(107, 114, 128, 1)',
-                    'rgba(22, 163, 74, 1)',
-                    'rgba(220, 38, 38, 1)',
-                ],
+                borderColor: colors.map(c => c.border),
                 borderWidth: 1,
             },
         ],
-    });
+      };
+    };
 
 
     return (
