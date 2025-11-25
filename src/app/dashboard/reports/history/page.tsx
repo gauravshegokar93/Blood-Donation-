@@ -14,6 +14,7 @@ import {
   Tooltip,
   Legend
 } from 'chart.js';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { historicalData } from "@/lib/historical-data";
 import type { Registration } from "@/lib/mock-data";
 
@@ -23,7 +24,8 @@ ChartJS.register(
   BarElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  ChartDataLabels
 );
 
 const CURRENT_YEAR = '2025-26';
@@ -89,7 +91,7 @@ export default function BDC_HistoryPage() {
             {
                 label: `Total Registrations in ${location}`,
                 data: reportData.map(d => d.total),
-                backgroundColor: reportData.map(d => d.source === 'Live' ? 'rgba(239, 68, 68, 0.6)' : 'rgba(59, 130, 246, 0.6)'),
+                backgroundColor: reportData.map(d => d.source === 'Live' ? 'rgba(239, 68, 68, 0.7)' : 'rgba(59, 130, 246, 0.7)'),
                 borderColor: reportData.map(d => d.source === 'Live' ? 'rgba(220, 38, 38, 1)' : 'rgba(37, 99, 235, 1)'),
                 borderWidth: 1,
             },
@@ -99,17 +101,52 @@ export default function BDC_HistoryPage() {
     const chartOptions = {
         responsive: true,
         plugins: {
-            legend: { position: 'top' as const },
-            title: { display: true, text: `Yearly Registration Trend for ${location}` },
+            legend: { 
+                display: false // We can hide legend as colors and labels are clear
+            },
+            title: { 
+                display: true, 
+                text: `Yearly Registration Trend for ${location}`,
+                font: {
+                    size: 18,
+                }
+            },
+            datalabels: {
+                anchor: 'end' as const,
+                align: 'top' as const,
+                font: {
+                    weight: 'bold' as const,
+                },
+                color: '#4A5568', // A slightly muted dark gray for labels
+                formatter: (value: number) => {
+                    return value > 0 ? value.toLocaleString() : '';
+                },
+            },
         },
         scales: {
-            y: { beginAtZero: true }
+            y: { 
+                beginAtZero: true,
+                ticks: {
+                    padding: 10,
+                },
+                grid: {
+                    drawOnChartArea: false, // Keep the background clean
+                }
+            },
+            x: {
+                 ticks: {
+                    padding: 5,
+                },
+                grid: {
+                    display: false, // No vertical grid lines
+                }
+            }
         }
     };
 
     return (
         <div className="container mx-auto p-4 md:p-8">
-            <Card>
+            <Card className="shadow-lg">
                 <CardHeader>
                     <CardTitle>BDC History Report</CardTitle>
                     <CardDescription>
@@ -118,31 +155,41 @@ export default function BDC_HistoryPage() {
                 </CardHeader>
                 <CardContent className="space-y-8">
                     <div>
-                        <h3 className="text-xl font-semibold mb-4">Registration Trend Chart</h3>
-                        <div className="h-96">
+                        <h3 className="text-xl font-semibold mb-4 text-center">Registration Trend Chart</h3>
+                        <div className="h-96 bg-gray-50 p-4 rounded-lg">
                             <Bar options={chartOptions} data={chartData} />
+                        </div>
+                         <div className="flex justify-center items-center space-x-6 mt-4">
+                            <div className="flex items-center">
+                                <div className="w-4 h-4 rounded-full mr-2" style={{ backgroundColor: 'rgba(59, 130, 246, 0.7)' }}></div>
+                                <span>Historical Data</span>
+                            </div>
+                            <div className="flex items-center">
+                                <div className="w-4 h-4 rounded-full mr-2" style={{ backgroundColor: 'rgba(239, 68, 68, 0.7)' }}></div>
+                                <span>Live Data (2025-26)</span>
+                            </div>
                         </div>
                     </div>
                     <div>
                          <h3 className="text-xl font-semibold mb-4">Historical Data Table</h3>
-                        <div className="border rounded-lg">
+                        <div className="border rounded-lg overflow-hidden">
                             <Table>
-                                <TableHeader>
+                                <TableHeader className="bg-gray-100">
                                     <TableRow>
-                                        <TableHead>Camp Year</TableHead>
-                                        <TableHead>Total Registrations</TableHead>
-                                        <TableHead>Data Source</TableHead>
+                                        <TableHead className="font-bold">Camp Year</TableHead>
+                                        <TableHead className="font-bold">Total Registrations</TableHead>
+                                        <TableHead className="font-bold">Data Source</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {reportData.map(item => (
-                                        <TableRow key={item.year}>
+                                        <TableRow key={item.year} className="hover:bg-gray-50">
                                             <TableCell className="font-medium">{item.year}</TableCell>
-                                            <TableCell>{item.total}</TableCell>
+                                            <TableCell>{item.total.toLocaleString()}</TableCell>
                                             <TableCell>
                                                 <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
                                                     item.source === 'Live' 
-                                                    ? 'bg-green-100 text-green-800' 
+                                                    ? 'bg-red-100 text-red-800' 
                                                     : 'bg-blue-100 text-blue-800'
                                                 }`}>
                                                     {item.source}

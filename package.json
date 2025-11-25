@@ -28,7 +28,8 @@
     "@radix-ui/react-dropdown-menu": "^2.0.6",
     "chart.js": "^4.4.3",
     "react-chartjs-2": "^5.2.0",
-    "mssql": "^10.0.2"
+    "mssql": "^10.0.2",
+    "chartjs-plugin-datalabels": "^2.2.0"
   },
   "devDependencies": {
     "@types/node": "^20",
