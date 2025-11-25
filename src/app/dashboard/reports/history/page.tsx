@@ -91,7 +91,7 @@ export default function BDC_HistoryPage() {
                 backgroundColor: (context: any) => {
                     const chart = context.chart;
                     const {ctx, chartArea, dataIndex} = chart;
-                    if (!chartArea) { return; }
+                    if (!chartArea || !reportData[dataIndex]) { return; }
 
                     const isLive = reportData[dataIndex].source === 'Live';
                     const baseColor = isLive ? 'rgba(239, 68, 68, 1)' : 'rgba(59, 130, 246, 1)';
