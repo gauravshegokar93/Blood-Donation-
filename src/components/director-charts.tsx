@@ -5,78 +5,72 @@ import {
   CategoryScale,
   LinearScale,
   BarElement,
-  ArcElement,
+  LineElement,
+  PointElement,
   Title,
   Tooltip,
   Legend,
   ChartData,
 } from 'chart.js';
-import { Bar, Doughnut } from 'react-chartjs-2';
+import { Bar, Line } from 'react-chartjs-2';
 
 ChartJS.register(
   CategoryScale,
   LinearScale,
   BarElement,
-  ArcElement,
+  LineElement,
+  PointElement,
   Title,
   Tooltip,
   Legend
 );
 
-const commonOptions = {
+const commonBarOptions = {
   responsive: true,
   maintainAspectRatio: false,
+  indexAxis: 'y' as const,
+  scales: {
+    x: {
+      beginAtZero: true,
+      grid: {
+        display: false,
+      },
+    },
+    y: {
+      grid: {
+        display: false,
+      }
+    }
+  },
+  plugins: {
+    legend: {
+      display: false,
+    },
+  },
+};
+
+const commonLineOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  scales: {
+    y: {
+      beginAtZero: true,
+    },
+  },
   plugins: {
     legend: {
       position: 'bottom' as const,
     },
   },
+  elements: {
+    line: {
+      tension: 0.1,
+    }
+  }
 };
 
-// --- Yearly Registrations Chart (Bar) ---
-export function YearlyRegistrationsChart({ data }: { data: { [key: string]: number } }) {
-  const labels = Object.keys(data).sort();
-  const values = labels.map(label => data[label]);
 
-  const chartData: ChartData<'bar'> = {
-    labels: labels,
-    datasets: [
-      {
-        label: 'Total Registrations',
-        data: values,
-        backgroundColor: 'rgba(59, 130, 246, 0.6)',
-        borderColor: 'rgba(37, 99, 235, 1)',
-        borderWidth: 1,
-      },
-    ],
-  };
-  
-  const options = {
-    ...commonOptions,
-     scales: {
-        y: {
-            beginAtZero: true
-        }
-    },
-    plugins: {
-        ...commonOptions.plugins,
-        title: {
-            display: true,
-            text: 'Total registrations across all locations per year.'
-        }
-    }
-  };
-
-  return (
-    <div style={{ height: '400px' }}>
-      <Bar data={chartData} options={options} />
-    </div>
-  );
-}
-
-
-// --- Location Performance Chart (Bar) ---
-export function LocationPerformanceChart({ data }: { data: { [key: string]: number } }) {
+export function LocationRegistrationsChart({ data }: { data: { [key: string]: number } }) {
   const labels = Object.keys(data);
   const values = Object.values(data);
   
@@ -84,73 +78,69 @@ export function LocationPerformanceChart({ data }: { data: { [key: string]: numb
     labels: labels,
     datasets: [
       {
-        label: 'Live Registrations',
+        label: 'Registrations',
         data: values,
         backgroundColor: [
-            'rgba(34, 197, 94, 0.6)',
-            'rgba(239, 68, 68, 0.6)',
-            'rgba(217, 119, 6, 0.6)',
-            'rgba(168, 85, 247, 0.6)',
+            'rgba(59, 130, 246, 0.7)',
+            'rgba(34, 197, 94, 0.7)',
+            'rgba(239, 68, 68, 0.7)',
+            'rgba(217, 119, 6, 0.7)',
         ],
         borderColor: [
-            'rgba(22, 163, 74, 1)',
-            'rgba(220, 38, 38, 1)',
-            'rgba(180, 83, 9, 1)',
-            'rgba(147, 51, 234, 1)',
+            'rgba(59, 130, 246, 1)',
+            'rgba(34, 197, 94, 1)',
+            'rgba(239, 68, 68, 1)',
+            'rgba(217, 119, 6, 1)',
         ],
         borderWidth: 1,
       },
     ],
   };
-  
-  const options = {
-     ...commonOptions,
-     indexAxis: 'y' as const,
-     scales: {
-        x: {
-            beginAtZero: true
-        }
-    },
-    plugins: {
-        ...commonOptions.plugins,
-        legend: { display: false }
-    }
-  };
 
   return (
     <div style={{ height: '300px' }}>
-      <Bar data={chartData} options={options} />
+      <Bar data={chartData} options={commonBarOptions} />
     </div>
   );
 }
 
 
-// --- Status Breakdown Chart (Doughnut) ---
-export function StatusBreakdownChart({ data }: { data: { accepted: number, rejected: number, pending: number } }) {
-  const chartData: ChartData<'doughnut'> = {
-    labels: ['Accepted', 'Rejected', 'Pending'],
+export function YearlyTrendChart({ data }: { data: { [key: string]: number } }) {
+  // Sort years chronologically and include all years from 2020 to 2025
+  const allYears = Array.from({length: 6}, (_, i) => `202${i}-${(i + 1).toString().slice(-2)}`);
+  
+  const historicalYears = allYears.filter(year => year !== '2025-26');
+  
+  const historicalValues = historicalYears.map(year => data[year] || 0);
+  const liveValue = data['2025-26'] || 0;
+
+  const chartData: ChartData<'line'> = {
+    labels: allYears,
     datasets: [
       {
-        label: '# of Registrations',
-        data: [data.accepted, data.rejected, data.pending],
-        backgroundColor: [
-          'rgba(34, 197, 94, 0.6)', // Green
-          'rgba(239, 68, 68, 0.6)',  // Red
-          'rgba(59, 130, 246, 0.6)', // Blue
-        ],
-        borderColor: [
-          'rgba(22, 163, 74, 1)',
-          'rgba(220, 38, 38, 1)',
-          'rgba(37, 99, 235, 1)',
-        ],
-        borderWidth: 1,
+        label: 'Historical Registrations',
+        data: [...historicalValues, null], // Null for 2025 to not draw a line
+        borderColor: 'rgba(107, 114, 128, 0.5)',
+        backgroundColor: 'rgba(107, 114, 128, 0.5)',
+        borderDash: [5, 5],
+        pointRadius: 5,
+        pointHoverRadius: 7,
+      },
+      {
+        label: 'Live Registrations (2025-26)',
+        data: [...Array(historicalValues.length).fill(null), liveValue], // Data only for the last point
+        borderColor: 'rgba(59, 130, 246, 1)',
+        backgroundColor: 'rgba(59, 130, 246, 1)',
+        pointRadius: 6,
+        pointHoverRadius: 8,
+        pointStyle: 'rectRot',
       },
     ],
   };
 
   return (
-    <div style={{ height: '300px' }}>
-      <Doughnut data={chartData} options={commonOptions} />
+    <div style={{ height: '350px' }}>
+      <Line data={chartData} options={commonLineOptions} />
     </div>
   );
 }

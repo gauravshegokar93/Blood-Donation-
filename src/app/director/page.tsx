@@ -4,75 +4,99 @@ import { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Droplets, LogOut } from 'lucide-react';
 import { Registration } from '@/lib/mock-data';
-import { historicalData, HistoricalData } from '@/lib/historical-data';
-import { YearlyRegistrationsChart, LocationPerformanceChart, StatusBreakdownChart } from '@/components/director-charts';
+import { historicalData } from '@/lib/historical-data';
+import { LocationRegistrationsChart, YearlyTrendChart } from '@/components/director-charts';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 const LOCATIONS = ['Pune', 'Rudrapur', 'Dharwad', 'Shegaon'];
 const CURRENT_YEAR = '2025-26';
 
-interface LiveData {
-    totalRegistrations: number;
+interface LiveLocationData {
+    total: number;
     accepted: number;
     rejected: number;
-    pending: number;
-    registrationsByLocation: { [location: string]: number };
+}
+
+interface LiveData {
+    [location: string]: LiveLocationData;
+}
+
+interface YearlyData {
+    [location: string]: {
+        [year: string]: number;
+    };
 }
 
 export default function DirectorPage() {
     const router = useRouter();
     const [liveData, setLiveData] = useState<LiveData | null>(null);
+    const [yearlyData, setYearlyData] = useState<YearlyData | null>(null);
 
     useEffect(() => {
-        let totalRegistrations = 0;
-        let accepted = 0;
-        let rejected = 0;
-        let pending = 0;
-        const registrationsByLocation: { [location: string]: number } = {};
+        const liveDataObject: LiveData = {};
+        const yearlyDataObject: YearlyData = {};
 
+        // Initialize with historical data
+        LOCATIONS.forEach(location => {
+            yearlyDataObject[location] = {};
+            historicalData.forEach(item => {
+                if (item.location === location) {
+                    yearlyDataObject[location][item.campYear] = item.totalRegistrations;
+                }
+            });
+        });
+
+        // Process live data for current year
         LOCATIONS.forEach(location => {
             const registrationKey = `registrations_${location}`;
             const campRegistrations: Registration[] = JSON.parse(sessionStorage.getItem(registrationKey) || '[]');
             
-            const locationRegistrations = campRegistrations.length;
-            registrationsByLocation[location] = locationRegistrations;
-            totalRegistrations += locationRegistrations;
+            const total = campRegistrations.length;
+            const accepted = campRegistrations.filter(r => r.status === 'ACCEPTED').length;
+            const rejected = campRegistrations.filter(r => r.status === 'REJECTED').length;
+
+            liveDataObject[location] = { total, accepted, rejected };
             
-            accepted += campRegistrations.filter(r => r.status === 'ACCEPTED').length;
-            rejected += campRegistrations.filter(r => r.status === 'REJECTED').length;
-            pending += campRegistrations.filter(r => r.status === 'REGISTERED').length;
+            // Add live data for the current year to the yearly data object
+            if (!yearlyDataObject[location]) {
+                yearlyDataObject[location] = {};
+            }
+            yearlyDataObject[location][CURRENT_YEAR] = total;
         });
 
-        setLiveData({
-            totalRegistrations,
-            accepted,
-            rejected,
-            pending,
-            registrationsByLocation
-        });
+        setLiveData(liveDataObject);
+        setYearlyData(yearlyDataObject);
+
     }, []);
-
-    const yearlyData = historicalData.reduce((acc, item) => {
-        if (!acc[item.campYear]) {
-            acc[item.campYear] = 0;
-        }
-        acc[item.campYear] += item.totalRegistrations;
-        return acc;
-    }, {} as {[year: string]: number});
-    
-    if (liveData) {
-        yearlyData[CURRENT_YEAR] = liveData.totalRegistrations;
-    }
 
     const handleLogout = () => {
         sessionStorage.clear();
         router.push('/');
     };
 
-    if (!liveData) {
+    if (!liveData || !yearlyData) {
         return <div>Loading analytics...</div>;
     }
+
+    const chartDataTotal = {
+        Pune: liveData.Pune.total,
+        Dharwad: liveData.Dharwad.total,
+        Rudrapur: liveData.Rudrapur.total,
+        Shegaon: liveData.Shegaon.total,
+    };
+    const chartDataAccepted = {
+        Pune: liveData.Pune.accepted,
+        Dharwad: liveData.Dharwad.accepted,
+        Rudrapur: liveData.Rudrapur.accepted,
+        Shegaon: liveData.Shegaon.accepted,
+    };
+     const chartDataRejected = {
+        Pune: liveData.Pune.rejected,
+        Dharwad: liveData.Dharwad.rejected,
+        Rudrapur: liveData.Rudrapur.rejected,
+        Shegaon: liveData.Shegaon.rejected,
+    };
 
     return (
         <div className="flex flex-col min-h-screen bg-background font-sans">
@@ -94,35 +118,38 @@ export default function DirectorPage() {
             </header>
 
             <main className="flex-grow p-4 md:p-8">
-                <h2 className="text-3xl font-bold mb-6">Management Overview</h2>
-                <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
-                     <Card className="xl:col-span-3">
-                        <CardHeader>
-                            <CardTitle className="text-center text-lg">Total Registrations (Last 5 Years)</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <YearlyRegistrationsChart data={yearlyData} />
-                        </CardContent>
-                    </Card>
-                     <Card>
-                        <CardHeader>
-                            <CardTitle className="text-center text-lg">Registrations by Location ({CURRENT_YEAR})</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <LocationPerformanceChart data={liveData.registrationsByLocation} />
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-center text-lg">Accepted vs. Rejected ({CURRENT_YEAR})</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <StatusBreakdownChart data={{accepted: liveData.accepted, rejected: liveData.rejected, pending: liveData.pending}} />
-                        </CardContent>
-                    </Card>
-                </div>
+                <section className="mb-12">
+                    <h2 className="text-3xl font-bold mb-6 text-center">Live Registrations ({CURRENT_YEAR})</h2>
+                    <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-3">
+                         <Card>
+                            <CardHeader><CardTitle className="text-center text-lg">Total Registrations</CardTitle></CardHeader>
+                            <CardContent><LocationRegistrationsChart data={chartDataTotal} /></CardContent>
+                        </Card>
+                         <Card>
+                            <CardHeader><CardTitle className="text-center text-lg">Accepted Registrations</CardTitle></CardHeader>
+                            <CardContent><LocationRegistrationsChart data={chartDataAccepted} /></CardContent>
+                        </Card>
+                         <Card>
+                            <CardHeader><CardTitle className="text-center text-lg">Rejected Registrations</CardTitle></CardHeader>
+                            <CardContent><LocationRegistrationsChart data={chartDataRejected} /></CardContent>
+                        </Card>
+                    </div>
+                </section>
+                
+                <section>
+                    <h2 className="text-3xl font-bold mb-6 text-center">Year-Wise Registration Trends (2020-2025)</h2>
+                     <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-2">
+                        {LOCATIONS.map(location => (
+                             <Card key={location}>
+                                <CardHeader><CardTitle className="text-center text-lg">{location}</CardTitle></CardHeader>
+                                <CardContent><YearlyTrendChart data={yearlyData[location]} /></CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                </section>
+
             </main>
-             <footer className="bg-gray-100 text-accent-foreground p-4">
+             <footer className="bg-gray-100 text-accent-foreground p-4 mt-8">
                 <div className="container mx-auto text-center text-sm">
                 <p>&copy; {new Date().getFullYear()} Blood Bank Management System. All Rights Reserved.</p>
                 </div>

@@ -4,7 +4,14 @@ export interface HistoricalData {
     totalRegistrations: number;
 }
 
+// Extended to include 2020-21 data
 export const historicalData: HistoricalData[] = [
+    // --- 2020-21 ---
+    { location: 'Pune', campYear: '2020-21', totalRegistrations: 1100 },
+    { location: 'Rudrapur', campYear: '2020-21', totalRegistrations: 750 },
+    { location: 'Dharwad', campYear: '2020-21', totalRegistrations: 850 },
+    { location: 'Shegaon', campYear: '2020-21', totalRegistrations: 600 },
+
     // --- 2021-22 ---
     { location: 'Pune', campYear: '2021-22', totalRegistrations: 1250 },
     { location: 'Rudrapur', campYear: '2021-22', totalRegistrations: 800 },
