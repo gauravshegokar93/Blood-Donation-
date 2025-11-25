@@ -2,12 +2,13 @@
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Droplets, Users, BarChart, Calendar, LogOut, Menu, X, Banknote, UserPlus, CheckCircle, XCircle, FileText, ChevronDown } from 'lucide-react';
+import { Droplets, Users, BarChart, Calendar, LogOut, Menu, X, Banknote, UserPlus, CheckCircle, XCircle, FileText, ChevronDown, Expand } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from "next/link";
 import { Registration, BloodBank } from "@/lib/mock-data";
 import { RegistrationStatusChart, BloodGroupChart, AgencyChart } from '@/components/dashboard-charts';
+import { Button } from "@/components/ui/button";
 
 const YEAR = '2025-26';
 
@@ -99,6 +100,11 @@ export default function Dashboard() {
         router.push('/');
     };
     
+    const openChartInNewWindow = (chartType: string, chartData: any) => {
+        sessionStorage.setItem('chartViewData', JSON.stringify({ chartType, chartData }));
+        window.open('/chart', '_blank', 'width=800,height=600');
+    };
+
     if (!location) {
         return (
             <div className="flex items-center justify-center min-h-screen">
@@ -270,24 +276,33 @@ export default function Dashboard() {
                         <h3 className="text-2xl font-bold mb-4">Analytics ({year} - {location})</h3>
                         <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3">
                             <Card>
-                                <CardHeader>
+                                <CardHeader className="flex flex-row items-center justify-between">
                                     <CardTitle className="text-center text-lg">Registration Status</CardTitle>
+                                    <Button variant="ghost" size="icon" onClick={() => openChartInNewWindow('RegistrationStatus', { data: chartData.statusData })}>
+                                        <Expand className="h-4 w-4" />
+                                    </Button>
                                 </CardHeader>
                                 <CardContent>
                                     <RegistrationStatusChart data={chartData.statusData} />
                                 </CardContent>
                             </Card>
                             <Card>
-                                <CardHeader>
+                                 <CardHeader className="flex flex-row items-center justify-between">
                                     <CardTitle className="text-center text-lg">Blood Group Distribution</CardTitle>
+                                     <Button variant="ghost" size="icon" onClick={() => openChartInNewWindow('BloodGroup', { data: chartData.bloodGroupData })}>
+                                        <Expand className="h-4 w-4" />
+                                    </Button>
                                 </CardHeader>
                                 <CardContent>
                                     <BloodGroupChart data={chartData.bloodGroupData} />
                                 </CardContent>
                             </Card>
                             <Card>
-                                <CardHeader>
-                                    <CardTitle className="text-center text-lg">Registrations by Blood Bank Agency</CardTitle>
+                                <CardHeader className="flex flex-row items-center justify-between">
+                                    <CardTitle className="text-center text-lg">Registrations by Agency</CardTitle>
+                                     <Button variant="ghost" size="icon" onClick={() => openChartInNewWindow('Agency', { data: chartData.agencyData })}>
+                                        <Expand className="h-4 w-4" />
+                                    </Button>
                                 </CardHeader>
                                 <CardContent>
                                     <AgencyChart data={chartData.agencyData} />

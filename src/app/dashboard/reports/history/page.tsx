@@ -17,6 +17,8 @@ import {
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { historicalData } from "@/lib/historical-data";
 import type { Registration } from "@/lib/mock-data";
+import { Button } from "@/components/ui/button";
+import { Expand } from "lucide-react";
 
 ChartJS.register(
   CategoryScale,
@@ -78,32 +80,6 @@ export default function BDC_HistoryPage() {
         }
     }, [router]);
 
-    if (!location) {
-        return <div>Loading session...</div>;
-    }
-    
-    const chartData = {
-        labels: reportData.map(d => d.year.split('-')[0]),
-        datasets: [
-            {
-                label: `Total Registrations in ${location}`,
-                data: reportData.map(d => d.total),
-                backgroundColor: (context: any) => {
-                    if (!reportData[context.dataIndex]) return 'rgba(0,0,0,0.1)';
-                    const isLive = reportData[context.dataIndex].source === 'Live';
-                    return isLive ? 'rgba(239, 68, 68, 0.8)' : 'rgba(59, 130, 246, 0.8)';
-                },
-                borderColor: (context: any) => {
-                     if (!reportData[context.dataIndex]) return 'rgba(0,0,0,1)';
-                    const isLive = reportData[context.dataIndex].source === 'Live';
-                    return isLive ? 'rgba(220, 38, 38, 1)' : 'rgba(37, 99, 235, 1)';
-                },
-                borderWidth: 2,
-                borderRadius: 5,
-            },
-        ],
-    };
-
     const chartOptions = {
         responsive: true,
         plugins: {
@@ -147,17 +123,73 @@ export default function BDC_HistoryPage() {
                     display: false,
                 }
             }
+        },
+        elements: {
+            bar: {
+                borderRadius: 5,
+                borderWidth: 2,
+            }
         }
     };
+
+    const chartData = {
+        labels: reportData.map(d => d.year.split('-')[0]),
+        datasets: [
+            {
+                label: `Total Registrations in ${location}`,
+                data: reportData.map(d => d.total),
+                backgroundColor: (context: any) => {
+                    const { ctx, chartArea, dataIndex } = context.chart;
+                    if (!chartArea || !reportData[dataIndex]) { return 'rgba(0,0,0,0.1)'; }
+                    
+                    const isLive = reportData[dataIndex].source === 'Live';
+                    const baseColor = isLive ? 'rgba(239, 68, 68, 1)' : 'rgba(59, 130, 246, 1)';
+                    const lightColor = isLive ? 'rgba(252, 165, 165, 1)' : 'rgba(147, 197, 253, 1)';
+
+                    const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+                    gradient.addColorStop(0, baseColor);
+                    gradient.addColorStop(1, lightColor);
+                    return gradient;
+                },
+                borderColor: (context: any) => {
+                    if (!reportData[context.dataIndex]) return 'rgba(0,0,0,1)';
+                    const isLive = reportData[context.dataIndex].source === 'Live';
+                    return isLive ? 'rgba(220, 38, 38, 1)' : 'rgba(37, 99, 235, 1)';
+                },
+            },
+        ],
+    };
+
+    const openChartInNewWindow = () => {
+        const chartViewData = {
+            chartType: 'Bar',
+            chartData: {
+                ...chartData,
+                options: chartOptions,
+            }
+        };
+        sessionStorage.setItem('chartViewData', JSON.stringify(chartViewData));
+        window.open('/chart', '_blank', 'width=1000,height=700');
+    };
+
+
+    if (!location) {
+        return <div>Loading session...</div>;
+    }
 
     return (
         <div className="container mx-auto p-4 md:p-8">
             <Card className="shadow-lg">
-                <CardHeader>
-                    <CardTitle>BDC History Report</CardTitle>
-                    <CardDescription>
-                        Timeline view of blood donation camp registration history for {location}.
-                    </CardDescription>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle>BDC History Report</CardTitle>
+                        <CardDescription>
+                            Timeline view of blood donation camp registration history for {location}.
+                        </CardDescription>
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={openChartInNewWindow}>
+                        <Expand className="h-5 w-5" />
+                    </Button>
                 </CardHeader>
                 <CardContent className="space-y-8">
                     <div>
@@ -167,11 +199,11 @@ export default function BDC_HistoryPage() {
                         </div>
                          <div className="flex justify-center items-center space-x-6 mt-4">
                             <div className="flex items-center">
-                                <div className="w-4 h-4 rounded-full mr-2" style={{ backgroundColor: 'rgba(59, 130, 246, 0.7)' }}></div>
+                                <div className="w-4 h-4 rounded-full mr-2" style={{ background: 'linear-gradient(to top, rgba(59, 130, 246, 1), rgba(147, 197, 253, 1))' }}></div>
                                 <span>Historical Data</span>
                             </div>
                             <div className="flex items-center">
-                                <div className="w-4 h-4 rounded-full mr-2" style={{ backgroundColor: 'rgba(239, 68, 68, 0.7)' }}></div>
+                                <div className="w-4 h-4 rounded-full mr-2" style={{ background: 'linear-gradient(to top, rgba(239, 68, 68, 1), rgba(252, 165, 165, 1))' }}></div>
                                 <span>Live Data ({CURRENT_YEAR})</span>
                             </div>
                         </div>

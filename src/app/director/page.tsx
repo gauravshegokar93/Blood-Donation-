@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Droplets, LogOut } from 'lucide-react';
+import { Droplets, LogOut, Expand } from 'lucide-react';
 import { Registration } from '@/lib/mock-data';
 import { historicalData } from '@/lib/historical-data';
 import { LocationRegistrationsChart, YearlyTrendChart } from '@/components/director-charts';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
 
 const LOCATIONS = ['Pune', 'Rudrapur', 'Dharwad', 'Shegaon'];
 const CURRENT_YEAR = '2025-26';
@@ -75,6 +76,11 @@ export default function DirectorPage() {
         router.push('/');
     };
 
+    const openChartInNewWindow = (chartType: string, chartData: any) => {
+        sessionStorage.setItem('chartViewData', JSON.stringify({ chartType, chartData }));
+        window.open('/chart', '_blank', 'width=1000,height=700');
+    };
+
     if (!liveData || !yearlyData) {
         return <div>Loading analytics...</div>;
     }
@@ -122,15 +128,30 @@ export default function DirectorPage() {
                     <h2 className="text-3xl font-bold mb-6 text-center">Live Registrations ({CURRENT_YEAR})</h2>
                     <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-3">
                          <Card>
-                            <CardHeader><CardTitle className="text-center text-lg">Total Registrations</CardTitle></CardHeader>
+                            <CardHeader className="flex flex-row items-center justify-between">
+                                <CardTitle className="text-center text-lg">Total Registrations</CardTitle>
+                                <Button variant="ghost" size="icon" onClick={() => openChartInNewWindow('LocationRegistrations', { title: 'Total Registrations', data: chartDataTotal })}>
+                                    <Expand className="h-4 w-4" />
+                                </Button>
+                            </CardHeader>
                             <CardContent><LocationRegistrationsChart data={chartDataTotal} /></CardContent>
                         </Card>
                          <Card>
-                            <CardHeader><CardTitle className="text-center text-lg">Accepted Registrations</CardTitle></CardHeader>
+                            <CardHeader className="flex flex-row items-center justify-between">
+                                <CardTitle className="text-center text-lg">Accepted Registrations</CardTitle>
+                                <Button variant="ghost" size="icon" onClick={() => openChartInNewWindow('LocationRegistrations', { title: 'Accepted Registrations', data: chartDataAccepted })}>
+                                    <Expand className="h-4 w-4" />
+                                </Button>
+                            </CardHeader>
                             <CardContent><LocationRegistrationsChart data={chartDataAccepted} /></CardContent>
                         </Card>
                          <Card>
-                            <CardHeader><CardTitle className="text-center text-lg">Rejected Registrations</CardTitle></CardHeader>
+                            <CardHeader className="flex flex-row items-center justify-between">
+                                <CardTitle className="text-center text-lg">Rejected Registrations</CardTitle>
+                                <Button variant="ghost" size="icon" onClick={() => openChartInNewWindow('LocationRegistrations', { title: 'Rejected Registrations', data: chartDataRejected })}>
+                                    <Expand className="h-4 w-4" />
+                                </Button>
+                            </CardHeader>
                             <CardContent><LocationRegistrationsChart data={chartDataRejected} /></CardContent>
                         </Card>
                     </div>
@@ -141,7 +162,12 @@ export default function DirectorPage() {
                      <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-2">
                         {LOCATIONS.map(location => (
                              <Card key={location}>
-                                <CardHeader><CardTitle className="text-center text-lg">{location}</CardTitle></CardHeader>
+                                <CardHeader className="flex flex-row items-center justify-between">
+                                    <CardTitle className="text-center text-lg">{location}</CardTitle>
+                                    <Button variant="ghost" size="icon" onClick={() => openChartInNewWindow('YearlyTrend', { title: `Yearly Trend for ${location}`, data: yearlyData[location] })}>
+                                        <Expand className="h-4 w-4" />
+                                    </Button>
+                                </CardHeader>
                                 <CardContent><YearlyTrendChart data={yearlyData[location]} /></CardContent>
                             </Card>
                         ))}

@@ -60,6 +60,12 @@ const commonBarOptions = {
       },
     },
   },
+  elements: {
+    bar: {
+      borderRadius: 5,
+      borderWidth: 2,
+    }
+  }
 };
 
 const commonLineOptions = {
@@ -125,7 +131,7 @@ export function LocationRegistrationsChart({ data }: { data: { [key: string]: nu
             
             const selectedColor = colors[context.dataIndex % colors.length];
 
-            const gradient = ctx.createLinearGradient(chartArea.left, 0, chartArea.right, 0);
+            const gradient = ctx.createLinearGradient(0, chartArea.left, 0, chartArea.right);
             gradient.addColorStop(0, selectedColor.base);
             gradient.addColorStop(1, selectedColor.light);
             return gradient;
@@ -136,8 +142,7 @@ export function LocationRegistrationsChart({ data }: { data: { [key: string]: nu
             'rgba(22, 163, 74, 1)',
             'rgba(147, 51, 234, 1)',
         ],
-        borderWidth: 1,
-        borderRadius: 4,
+        borderWidth: 2,
       },
     ],
   };

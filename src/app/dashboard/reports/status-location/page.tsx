@@ -12,6 +12,8 @@ import {
   Legend,
 } from 'chart.js';
 import type { Registration } from "@/lib/mock-data";
+import { Button } from "@/components/ui/button";
+import { Expand } from "lucide-react";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -48,12 +50,19 @@ export default function BDC_StatusLocationPage() {
         }
     }, [router]);
 
-    if (!location) {
-        return <div>Loading session...</div>;
-    }
+    const chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { position: 'bottom' as const },
+            title: {
+                display: true,
+                text: `Status Distribution for ${location}`,
+                font: { size: 16 }
+            }
+        }
+    };
 
-    const year = YEAR;
-    
     const chartData = {
         labels: ['Accepted', 'Rejected', 'Pending'],
         datasets: [
@@ -75,13 +84,23 @@ export default function BDC_StatusLocationPage() {
         ],
     };
 
-    const chartOptions = {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: { position: 'bottom' as const }
-        }
+    const openChartInNewWindow = () => {
+        const chartViewData = {
+            chartType: 'Doughnut',
+            chartData: {
+                data: chartData,
+                options: chartOptions,
+            }
+        };
+        sessionStorage.setItem('chartViewData', JSON.stringify(chartViewData));
+        window.open('/chart', '_blank', 'width=800,height=600');
     };
+
+    if (!location) {
+        return <div>Loading session...</div>;
+    }
+
+    const year = YEAR;
 
     return (
         <div className="container mx-auto p-4 md:p-8">
@@ -150,10 +169,19 @@ export default function BDC_StatusLocationPage() {
                             </div>
                         </div>
                         <div className="lg:col-span-1">
-                            <h3 className="text-xl font-semibold mb-4">Status Distribution</h3>
-                            <div className="h-80 relative">
-                                <Doughnut data={chartData} options={chartOptions} />
-                            </div>
+                            <Card>
+                                <CardHeader className="flex flex-row items-center justify-between">
+                                    <h3 className="text-xl font-semibold">Status Distribution</h3>
+                                     <Button variant="ghost" size="icon" onClick={openChartInNewWindow}>
+                                        <Expand className="h-4 w-4" />
+                                    </Button>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="h-80 relative">
+                                        <Doughnut data={chartData} options={chartOptions as any} />
+                                    </div>
+                                </CardContent>
+                            </Card>
                         </div>
                     </div>
                 </CardContent>
