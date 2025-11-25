@@ -89,22 +89,17 @@ export default function BDC_HistoryPage() {
                 label: `Total Registrations in ${location}`,
                 data: reportData.map(d => d.total),
                 backgroundColor: (context: any) => {
-                    const chart = context.chart;
-                    const {ctx, chartArea, dataIndex} = chart;
-                    if (!chartArea || !reportData[dataIndex]) { return; }
-
-                    const isLive = reportData[dataIndex].source === 'Live';
-                    const baseColor = isLive ? 'rgba(239, 68, 68, 1)' : 'rgba(59, 130, 246, 1)';
-                    const lightColor = isLive ? 'rgba(252, 165, 165, 1)' : 'rgba(147, 197, 253, 1)';
-
-                    const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
-                    gradient.addColorStop(0, baseColor);
-                    gradient.addColorStop(1, lightColor);
-                    return gradient;
+                    if (!reportData[context.dataIndex]) return 'rgba(0,0,0,0.1)';
+                    const isLive = reportData[context.dataIndex].source === 'Live';
+                    return isLive ? 'rgba(239, 68, 68, 0.8)' : 'rgba(59, 130, 246, 0.8)';
                 },
-                borderColor: reportData.map(d => d.source === 'Live' ? 'rgba(220, 38, 38, 1)' : 'rgba(37, 99, 235, 1)'),
-                borderWidth: 1,
-                borderRadius: 4,
+                borderColor: (context: any) => {
+                     if (!reportData[context.dataIndex]) return 'rgba(0,0,0,1)';
+                    const isLive = reportData[context.dataIndex].source === 'Live';
+                    return isLive ? 'rgba(220, 38, 38, 1)' : 'rgba(37, 99, 235, 1)';
+                },
+                borderWidth: 2,
+                borderRadius: 5,
             },
         ],
     };

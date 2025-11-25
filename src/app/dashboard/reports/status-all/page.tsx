@@ -37,11 +37,11 @@ interface LocationStats {
     pending: number;
 }
 
-const locationColors: { [key: string]: { base: string, light: string, border: string } } = {
-    'Pune': { base: 'rgba(59, 130, 246, 1)', light: 'rgba(147, 197, 253, 1)', border: 'rgba(37, 99, 235, 1)' },
-    'Rudrapur': { base: 'rgba(34, 197, 94, 1)', light: 'rgba(134, 239, 172, 1)', border: 'rgba(22, 163, 74, 1)' },
-    'Dharwad': { base: 'rgba(249, 115, 22, 1)', light: 'rgba(253, 186, 116, 1)', border: 'rgba(217, 119, 6, 1)' },
-    'Shegaon': { base: 'rgba(168, 85, 247, 1)', light: 'rgba(216, 180, 254, 1)', border: 'rgba(147, 51, 234, 1)' },
+const locationColors: { [key: string]: string } = {
+    'Pune': 'rgba(59, 130, 246, 1)',
+    'Rudrapur': 'rgba(34, 197, 94, 1)',
+    'Dharwad': 'rgba(249, 115, 22, 1)',
+    'Shegaon': 'rgba(168, 85, 247, 1)',
 };
 
 
@@ -120,11 +120,11 @@ export default function BDC_StatusAllPage() {
     });
 
     const getChartData = (item: LocationStats) => {
-      const colors = [
-          locationColors[item.location] || locationColors['Pune'],
-          { base: 'rgba(34, 197, 94, 1)', light: 'rgba(134, 239, 172, 1)', border: 'rgba(22, 163, 74, 1)' }, // Accepted Green
-          { base: 'rgba(239, 68, 68, 1)', light: 'rgba(252, 165, 165, 1)', border: 'rgba(220, 38, 38, 1)' }  // Rejected Red
-      ];
+      const colors = {
+        total: locationColors[item.location] || 'rgba(100,100,100,1)',
+        accepted: 'rgba(34, 197, 94, 1)', 
+        rejected: 'rgba(239, 68, 68, 1)'
+      };
 
       return {
         labels: ['Total', 'Accepted', 'Rejected'],
@@ -132,21 +132,14 @@ export default function BDC_StatusAllPage() {
             {
                 label: 'Registrations',
                 data: [item.total, item.accepted, item.rejected],
-                backgroundColor: (context: any) => {
-                    const chart = context.chart;
-                    const {ctx, chartArea, dataIndex} = chart;
-                    if (!chartArea) { return; }
-
-                    const selectedColor = colors[dataIndex];
-                    if (!selectedColor) return 'rgba(0,0,0,0.1)';
-
-                    const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
-                    gradient.addColorStop(0, selectedColor.base);
-                    gradient.addColorStop(1, selectedColor.light);
-                    return gradient;
-                },
-                borderColor: colors.map(c => c.border),
-                borderWidth: 1,
+                backgroundColor: [
+                    colors.total.replace('1)', '0.8)'), 
+                    colors.accepted.replace('1)', '0.8)'), 
+                    colors.rejected.replace('1)', '0.8)')
+                ],
+                borderColor: [colors.total, colors.accepted, colors.rejected],
+                borderWidth: 2,
+                borderRadius: 5
             },
         ],
       };
@@ -163,9 +156,9 @@ export default function BDC_StatusAllPage() {
             </div>
              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
                 {reportData.map(item => (
-                    <Card key={item.location} className="shadow-md hover:shadow-lg transition-shadow duration-300 border-l-4" style={{borderLeftColor: locationColors[item.location]?.border}}>
+                    <Card key={item.location} className="shadow-md hover:shadow-lg transition-shadow duration-300 border-l-4" style={{borderLeftColor: locationColors[item.location]}}>
                         <CardHeader>
-                            <CardTitle style={{color: locationColors[item.location]?.border}}>{item.location}</CardTitle>
+                            <CardTitle style={{color: locationColors[item.location]}}>{item.location}</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <div className="h-64 relative">
