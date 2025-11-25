@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -24,25 +24,30 @@ export default function BloodBankPage() {
   const initialFormState: Partial<Omit<BloodBank, 'id'>> = { name: '', location: '', counter: 0, quota: 0, year: YEAR };
   const [formState, setFormState] = useState<Partial<BloodBank>>(initialFormState);
 
+  const fetchBloodBanks = useCallback(async (loc: string) => {
+    try {
+      const response = await fetch(`/api/blood-banks?location=${loc}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch data');
+      }
+      const data: BloodBank[] = await response.json();
+      setBloodBanks(data);
+    } catch (error) {
+      console.error("Error fetching blood banks:", error);
+      alert("Could not load blood banks from the database.");
+    }
+  }, []);
+
   useEffect(() => {
     const savedLocation = sessionStorage.getItem('bdcLocation');
     if (!savedLocation) {
       router.push('/');
     } else {
       setLocation(savedLocation);
-      const bloodBankKey = `bloodBanks_${savedLocation}`;
-      const campBanks: BloodBank[] = JSON.parse(sessionStorage.getItem(bloodBankKey) || '[]').map((b: BloodBank) => ({...b, year: YEAR}));
-      setBloodBanks(campBanks);
+      fetchBloodBanks(savedLocation);
       setFormState(prev => ({ ...prev, location: savedLocation, year: YEAR }));
     }
-  }, [router]);
-
-  const updateSessionStorage = (updatedCampBanks: BloodBank[]) => {
-      if (!location) return;
-      const bloodBankKey = `bloodBanks_${location}`;
-      sessionStorage.setItem(bloodBankKey, JSON.stringify(updatedCampBanks));
-      setBloodBanks(updatedCampBanks);
-  }
+  }, [router, fetchBloodBanks]);
   
   const handleNew = () => {
     if (!location) return;
@@ -58,12 +63,20 @@ export default function BloodBankPage() {
     }
   };
 
-  const handleDelete = () => {
-    if (selectedBank) {
-        const updatedBanks = bloodBanks.filter(b => b.id !== selectedBank.id);
-        updateSessionStorage(updatedBanks);
-        setIsDeleteDialogOpen(false);
-        setSelectedBank(null);
+  const handleDelete = async () => {
+    if (selectedBank && location) {
+        try {
+            const response = await fetch(`/api/blood-banks?id=${selectedBank.id}`, {
+                method: 'DELETE',
+            });
+            if (!response.ok) throw new Error('Failed to delete');
+            await fetchBloodBanks(location);
+            setIsDeleteDialogOpen(false);
+            setSelectedBank(null);
+        } catch (error) {
+            console.error("Error deleting bank:", error);
+            alert("Failed to delete blood bank.");
+        }
     }
   };
   
@@ -74,20 +87,25 @@ export default function BloodBankPage() {
     setIsFormOpen(false);
   }
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!location) return;
 
-    let updatedCampBanks;
-    
-    if (formState.id) { // Editing existing
-      updatedCampBanks = bloodBanks.map(b => b.id === formState.id ? {...formState, year: YEAR, location: location } as BloodBank : b);
-    } else { // Creating new
-      const newId = bloodBanks.length > 0 ? Math.max(...bloodBanks.map(b => b.id)) + 1 : 1;
-      updatedCampBanks = [...bloodBanks, { ...formState, id: newId, year: YEAR, location: location } as BloodBank];
+    try {
+      const response = await fetch('/api/blood-banks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...formState, location, year: YEAR }),
+      });
+      if (!response.ok) throw new Error('Failed to save');
+      
+      await fetchBloodBanks(location);
+      handleCancel();
+
+    } catch (error) {
+      console.error("Error saving bank:", error);
+      alert("Failed to save blood bank.");
     }
-    updateSessionStorage(updatedCampBanks);
-    handleCancel();
   };
 
   const handleClose = () => {
@@ -116,7 +134,7 @@ export default function BloodBankPage() {
                 <DialogHeader>
                   <DialogTitle>Are you sure?</DialogTitle>
                   <DialogDescription>
-                    This will permanently delete the blood bank: <span className="font-bold">{selectedBank?.name}</span>. This action cannot be undone.
+                    This will permanently delete the blood bank from the database: <span className="font-bold">{selectedBank?.name}</span>. This action cannot be undone.
                   </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
