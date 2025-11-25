@@ -138,7 +138,7 @@ export default function BDC_StatusAllPage() {
                     if (!chartArea) { return; }
 
                     const selectedColor = colors[dataIndex];
-                    if (!selectedColor) return 'rgba(0,0,0,0.1)'; // Fallback color
+                    if (!selectedColor) return 'rgba(0,0,0,0.1)';
 
                     const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
                     gradient.addColorStop(0, selectedColor.base);
