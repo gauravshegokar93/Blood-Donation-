@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Bar } from 'react-chartjs-2';
@@ -37,11 +37,11 @@ interface LocationStats {
     pending: number;
 }
 
-const locationColors: { [key: string]: { bg: string, border: string } } = {
-    'Pune': { bg: 'rgba(59, 130, 246, 0.7)', border: 'rgba(37, 99, 235, 1)' },
-    'Rudrapur': { bg: 'rgba(34, 197, 94, 0.7)', border: 'rgba(22, 163, 74, 1)' },
-    'Dharwad': { bg: 'rgba(217, 119, 6, 0.7)', border: 'rgba(180, 83, 9, 1)' },
-    'Shegaon': { bg: 'rgba(168, 85, 247, 0.7)', border: 'rgba(147, 51, 234, 1)' },
+const locationColors: { [key: string]: { base: string, light: string, border: string } } = {
+    'Pune': { base: 'rgba(59, 130, 246, 1)', light: 'rgba(147, 197, 253, 1)', border: 'rgba(37, 99, 235, 1)' },
+    'Rudrapur': { base: 'rgba(34, 197, 94, 1)', light: 'rgba(134, 239, 172, 1)', border: 'rgba(22, 163, 74, 1)' },
+    'Dharwad': { base: 'rgba(249, 115, 22, 1)', light: 'rgba(253, 186, 116, 1)', border: 'rgba(217, 119, 6, 1)' },
+    'Shegaon': { base: 'rgba(168, 85, 247, 1)', light: 'rgba(216, 180, 254, 1)', border: 'rgba(147, 51, 234, 1)' },
 };
 
 
@@ -125,26 +125,29 @@ export default function BDC_StatusAllPage() {
             {
                 label: 'Registrations',
                 data: [item.total, item.accepted, item.rejected],
-                backgroundColor: [
-                    (context: any) => {
-                        const chart = context.chart;
-                        const {ctx, chartArea} = chart;
-                        if (!chartArea) { return; }
-                        const baseColor = locationColors[item.location]?.bg || 'rgba(156, 163, 175, 0.7)';
-                        const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
-                        gradient.addColorStop(0, baseColor.replace('0.7', '0.9'));
-                        gradient.addColorStop(1, baseColor.replace('0.7', '0.4'));
-                        return gradient;
-                    },
-                    'rgba(74, 222, 128, 0.7)',
-                    'rgba(248, 113, 113, 0.7)',
-                ],
+                backgroundColor: (context: any) => {
+                    const chart = context.chart;
+                    const {ctx, chartArea, dataIndex} = chart;
+                    if (!chartArea) { return; }
+
+                    const colors = [
+                        locationColors[item.location] || locationColors['Pune'],
+                        { base: 'rgba(34, 197, 94, 1)', light: 'rgba(134, 239, 172, 1)' }, // Accepted Green
+                        { base: 'rgba(239, 68, 68, 1)', light: 'rgba(252, 165, 165, 1)' }  // Rejected Red
+                    ];
+                    
+                    const selectedColor = colors[dataIndex];
+                    const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+                    gradient.addColorStop(0, selectedColor.base);
+                    gradient.addColorStop(1, selectedColor.light);
+                    return gradient;
+                },
                 borderColor: [
                      locationColors[item.location]?.border || 'rgba(107, 114, 128, 1)',
-                    'rgba(34, 197, 94, 1)',
-                    'rgba(239, 68, 68, 1)',
+                    'rgba(22, 163, 74, 1)',
+                    'rgba(220, 38, 38, 1)',
                 ],
-                borderWidth: 2,
+                borderWidth: 1,
             },
         ],
     });
@@ -166,7 +169,7 @@ export default function BDC_StatusAllPage() {
                         </CardHeader>
                         <CardContent>
                             <div className="h-64 relative">
-                                <Bar options={getChartOptions()} data={getChartData(item)} />
+                                <Bar options={getChartOptions() as any} data={getChartData(item)} />
                             </div>
                         </CardContent>
                     </Card>

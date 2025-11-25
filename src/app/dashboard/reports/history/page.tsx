@@ -83,14 +83,28 @@ export default function BDC_HistoryPage() {
     }
     
     const chartData = {
-        labels: reportData.map(d => d.year.split('-')[0]), // Show only the first year for labels like '2025-26'
+        labels: reportData.map(d => d.year.split('-')[0]),
         datasets: [
             {
                 label: `Total Registrations in ${location}`,
                 data: reportData.map(d => d.total),
-                backgroundColor: reportData.map(d => d.source === 'Live' ? 'rgba(239, 68, 68, 0.7)' : 'rgba(59, 130, 246, 0.7)'),
+                backgroundColor: (context: any) => {
+                    const chart = context.chart;
+                    const {ctx, chartArea, dataIndex} = chart;
+                    if (!chartArea) { return; }
+
+                    const isLive = reportData[dataIndex].source === 'Live';
+                    const baseColor = isLive ? 'rgba(239, 68, 68, 1)' : 'rgba(59, 130, 246, 1)';
+                    const lightColor = isLive ? 'rgba(252, 165, 165, 1)' : 'rgba(147, 197, 253, 1)';
+
+                    const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+                    gradient.addColorStop(0, baseColor);
+                    gradient.addColorStop(1, lightColor);
+                    return gradient;
+                },
                 borderColor: reportData.map(d => d.source === 'Live' ? 'rgba(220, 38, 38, 1)' : 'rgba(37, 99, 235, 1)'),
                 borderWidth: 1,
+                borderRadius: 4,
             },
         ],
     };
@@ -154,7 +168,7 @@ export default function BDC_HistoryPage() {
                     <div>
                         <h3 className="text-xl font-semibold mb-4 text-center">Registration Trend Chart</h3>
                         <div className="h-96 bg-gray-50 p-4 rounded-lg">
-                            <Bar options={chartOptions} data={chartData} />
+                            <Bar options={chartOptions as any} data={chartData} />
                         </div>
                          <div className="flex justify-center items-center space-x-6 mt-4">
                             <div className="flex items-center">
@@ -163,7 +177,7 @@ export default function BDC_HistoryPage() {
                             </div>
                             <div className="flex items-center">
                                 <div className="w-4 h-4 rounded-full mr-2" style={{ backgroundColor: 'rgba(239, 68, 68, 0.7)' }}></div>
-                                <span>Live Data (2025-26)</span>
+                                <span>Live Data ({CURRENT_YEAR})</span>
                             </div>
                         </div>
                     </div>
