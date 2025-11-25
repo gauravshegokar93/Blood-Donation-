@@ -13,6 +13,8 @@ import {
   ChartData,
 } from 'chart.js';
 import { Bar, Line } from 'react-chartjs-2';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
+
 
 ChartJS.register(
   CategoryScale,
@@ -22,13 +24,28 @@ ChartJS.register(
   PointElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  ChartDataLabels
 );
 
 const commonBarOptions = {
   responsive: true,
   maintainAspectRatio: false,
   indexAxis: 'y' as const,
+  plugins: {
+    legend: {
+      display: false,
+    },
+    datalabels: {
+      anchor: 'end' as const,
+      align: 'right' as const,
+      color: '#4A5568',
+      font: {
+        weight: 'bold' as const,
+      },
+      formatter: (value: number) => value > 0 ? value.toLocaleString() : '',
+    },
+  },
   scales: {
     x: {
       beginAtZero: true,
@@ -39,12 +56,7 @@ const commonBarOptions = {
     y: {
       grid: {
         display: false,
-      }
-    }
-  },
-  plugins: {
-    legend: {
-      display: false,
+      },
     },
   },
 };
@@ -52,14 +64,17 @@ const commonBarOptions = {
 const commonLineOptions = {
   responsive: true,
   maintainAspectRatio: false,
-  scales: {
-    y: {
-      beginAtZero: true,
-    },
-  },
   plugins: {
     legend: {
       position: 'bottom' as const,
+    },
+     datalabels: {
+        display: false, // Generally too cluttered for line charts
+     },
+  },
+  scales: {
+    y: {
+      beginAtZero: true,
     },
   },
   elements: {
@@ -106,7 +121,6 @@ export function LocationRegistrationsChart({ data }: { data: { [key: string]: nu
 
 
 export function YearlyTrendChart({ data }: { data: { [key: string]: number } }) {
-  // Sort years chronologically and include all years from 2020 to 2025
   const allYears = Array.from({length: 6}, (_, i) => `202${i}-${(i + 1).toString().slice(-2)}`);
   
   const historicalYears = allYears.filter(year => year !== '2025-26');
@@ -119,7 +133,7 @@ export function YearlyTrendChart({ data }: { data: { [key: string]: number } }) 
     datasets: [
       {
         label: 'Historical Registrations',
-        data: [...historicalValues, null], // Null for 2025 to not draw a line
+        data: [...historicalValues, null], 
         borderColor: 'rgba(107, 114, 128, 0.5)',
         backgroundColor: 'rgba(107, 114, 128, 0.5)',
         borderDash: [5, 5],
@@ -128,7 +142,7 @@ export function YearlyTrendChart({ data }: { data: { [key: string]: number } }) 
       },
       {
         label: 'Live Registrations (2025-26)',
-        data: [...Array(historicalValues.length).fill(null), liveValue], // Data only for the last point
+        data: [...Array(historicalValues.length).fill(null), liveValue], 
         borderColor: 'rgba(59, 130, 246, 1)',
         backgroundColor: 'rgba(59, 130, 246, 1)',
         pointRadius: 6,

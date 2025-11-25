@@ -85,9 +85,9 @@ export default function BDC_StatusAllPage() {
                 display: false,
             },
             datalabels: {
-                anchor: 'center' as const,
-                align: 'center' as const,
-                color: 'white',
+                anchor: 'end' as const,
+                align: 'top' as const,
+                color: '#4A5568',
                 font: {
                     weight: 'bold' as const,
                     size: 14,

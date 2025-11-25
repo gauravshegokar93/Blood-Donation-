@@ -65,15 +65,12 @@ export default function BDC_HistoryPage() {
                 source: 'Live' as const
             };
             
-            // Combine and sort, ensuring current year is included
             const combinedData = [...locationHistory];
             const currentYearIndex = combinedData.findIndex(d => d.year === CURRENT_YEAR);
 
             if (currentYearIndex > -1) {
-                // If historical data contains current year, update it with live data
                 combinedData[currentYearIndex] = liveDataForCurrentYear;
             } else {
-                 // Otherwise, add the live data
                 combinedData.push(liveDataForCurrentYear);
             }
             
@@ -102,7 +99,7 @@ export default function BDC_HistoryPage() {
         responsive: true,
         plugins: {
             legend: { 
-                display: false // We can hide legend as colors and labels are clear
+                display: false
             },
             title: { 
                 display: true, 
@@ -117,7 +114,7 @@ export default function BDC_HistoryPage() {
                 font: {
                     weight: 'bold' as const,
                 },
-                color: '#4A5568', // A slightly muted dark gray for labels
+                color: '#4A5568',
                 formatter: (value: number) => {
                     return value > 0 ? value.toLocaleString() : '';
                 },
@@ -130,7 +127,7 @@ export default function BDC_HistoryPage() {
                     padding: 10,
                 },
                 grid: {
-                    drawOnChartArea: false, // Keep the background clean
+                    drawOnChartArea: false,
                 }
             },
             x: {
@@ -138,7 +135,7 @@ export default function BDC_HistoryPage() {
                     padding: 5,
                 },
                 grid: {
-                    display: false, // No vertical grid lines
+                    display: false,
                 }
             }
         }
