@@ -18,18 +18,10 @@ type SortKey = keyof Registration;
 const YEAR = '2025-26';
 
 function generateRegistrationId(location: string, existingRegistrations: Registration[]): string {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = (today.getMonth() + 1).toString().padStart(2, '0');
-    const day = today.getDate().toString().padStart(2, '0');
-    const datePrefix = `REG-${year}${month}${day}-`;
-
-    const todayRegistrations = existingRegistrations.filter(r => r.id.startsWith(datePrefix));
-    
-    const nextIdNumber = todayRegistrations.length + 1;
+    const locationPrefix = location.substring(0, 3).toUpperCase();
+    const nextIdNumber = existingRegistrations.length + 1;
     const nextId = nextIdNumber.toString().padStart(4, '0');
-    
-    return `${datePrefix}${nextId}`;
+    return `${locationPrefix}-${nextId}`;
 }
 
 
@@ -47,7 +39,7 @@ export default function RegistrationPage() {
     const [nextRegId, setNextRegId] = useState('');
     
     const [sortKey, setSortKey] = useState<SortKey>('id');
-    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
     
     const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null);
     const [isEditing, setIsEditing] = useState(false);
@@ -189,7 +181,7 @@ export default function RegistrationPage() {
         if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
         if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
         return 0;
-    });
+    }).slice(0, 30);
     
     const renderSortArrow = (key: SortKey) => {
         if (sortKey !== key) return null;

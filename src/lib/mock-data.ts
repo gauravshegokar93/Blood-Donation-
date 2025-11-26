@@ -8,7 +8,7 @@ export interface BloodBank {
 }
 
 export interface Registration {
-    id: string; // REG-YYYYMMDD-XXXX format
+    id: string; // e.g. PUN-0001
     name: string;
     bloodGroup: string;
     mobile: string;
@@ -51,16 +51,10 @@ const allRegistrations: Omit<Registration, 'id' | 'year' | 'status'>[] = [
 ];
 
 function generateRegistrationId(location: string, existing: Registration[]): string {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = (today.getMonth() + 1).toString().padStart(2, '0');
-    const day = today.getDate().toString().padStart(2, '0');
-    const datePrefix = `REG-${year}${month}${day}-`;
-
-    const todayRegistrations = existing.filter(r => r.id.startsWith(datePrefix) && r.location === location);
-    const nextIdNumber = todayRegistrations.length + 1;
+    const locationPrefix = location.substring(0, 3).toUpperCase();
+    const nextIdNumber = existing.filter(r => r.id.startsWith(locationPrefix)).length + 1;
     const nextId = nextIdNumber.toString().padStart(4, '0');
-    return `${datePrefix}${nextId}`;
+    return `${locationPrefix}-${nextId}`;
 }
 
 
@@ -77,16 +71,21 @@ export function initializeMockData(location: string) {
             .filter(b => b.location === location)
             .map((b, index) => ({ ...b, id: index + 1, year: year }));
 
-        const locationRegistrations: Registration[] = allRegistrations
+        const initialRegistrations: Registration[] = [];
+        const locationRegistrations = allRegistrations
             .filter(r => r.location === location)
-            .map((r, index) => ({ 
-                ...r, 
-                id: generateRegistrationId(location, []), // Generate initial IDs
-                year: year, 
-                status: index % 3 === 0 ? 'ACCEPTED' : index % 3 === 1 ? 'REJECTED' : 'REGISTERED',
-                rejectionReason: index % 3 === 1 ? 'Low Hemoglobin' : undefined,
-                rejectionDate: index % 3 === 1 ? new Date().toISOString().split('T')[0] : undefined
-            }));
+            .map((r, index) => {
+                const newReg = { 
+                    ...r, 
+                    id: generateRegistrationId(location, initialRegistrations),
+                    year: year, 
+                    status: index % 3 === 0 ? 'ACCEPTED' : index % 3 === 1 ? 'REJECTED' : 'REGISTERED' as Registration['status'],
+                    rejectionReason: index % 3 === 1 ? 'Low Hemoglobin' : undefined,
+                    rejectionDate: index % 3 === 1 ? new Date().toISOString().split('T')[0] : undefined
+                };
+                initialRegistrations.push(newReg);
+                return newReg;
+            });
 
         sessionStorage.setItem(bloodBankKey, JSON.stringify(locationBloodBanks));
         sessionStorage.setItem(registrationKey, JSON.stringify(locationRegistrations));

@@ -74,7 +74,7 @@ export default function AcceptancePage() {
                             <Label htmlFor="reg-id">Registered No.</Label>
                             <Input 
                                 id="reg-id" 
-                                placeholder="Enter Registration ID (e.g., REG-YYYYMMDD-XXXX)" 
+                                placeholder="Enter Registration ID (e.g., PUN-0001)" 
                                 value={registrationId}
                                 onChange={(e) => setRegistrationId(e.target.value)}
                                 required
