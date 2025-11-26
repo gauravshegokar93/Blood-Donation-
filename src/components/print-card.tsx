@@ -21,32 +21,13 @@ export function PrintCard({ registration, agency }: PrintCardProps) {
                 width: '85.6mm', 
                 height: '54mm', 
                 fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-                fontSize: '8pt', // smaller base font size for landscape
+                fontSize: '8pt',
                 lineHeight: '1.2'
             }}
         >
             {/* Header */}
             <div className="absolute w-full text-center" style={{top: '3mm'}}>
                 <div style={{fontSize: '8pt', fontWeight: 'bold'}}>BLOOD DONATION CAMP {registration.year}</div>
-            </div>
-
-             <div 
-                className="absolute"
-                style={{ 
-                    top: '3mm', 
-                    left: '26mm', 
-                    fontWeight: 'bold',
-                    border: '2px solid black',
-                    borderRadius: '50%',
-                    width: '14mm',
-                    height: '14mm',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '10pt'
-                }}
-            >
-                {registration.bloodGroup}
             </div>
             
             {/* Reg and Sr No */}
@@ -72,6 +53,26 @@ export function PrintCard({ registration, agency }: PrintCardProps) {
             {/* Counter Number */}
             <div className="absolute" style={{ top: '42mm', left: '4mm', fontSize: '8pt' }}>
                 <span className="font-normal">Counter No:</span> <span style={{ fontWeight: 'bold', fontSize: '10pt' }}>{agency?.counter || 'N/A'}</span>
+            </div>
+            
+             {/* Blood Group */}
+             <div 
+                className="absolute"
+                style={{ 
+                    bottom: '8mm', 
+                    right: '4mm', 
+                    fontWeight: 'bold',
+                    border: '2px solid black',
+                    borderRadius: '50%',
+                    width: '14mm',
+                    height: '14mm',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '10pt'
+                }}
+            >
+                {registration.bloodGroup}
             </div>
 
             {/* Footer */}
