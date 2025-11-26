@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Droplets, LogOut, Expand } from 'lucide-react';
 import { Registration } from '@/lib/mock-data';
 import { historicalData } from '@/lib/historical-data';
-import { LocationRegistrationsChart, YearlyTrendChart } from '@/components/director-charts';
+import { YearlyTrendChart } from '@/components/director-charts';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -35,16 +36,6 @@ ChartJS.register(
 const LOCATIONS = ['Pune', 'Rudrapur', 'Dharwad', 'Shegaon'];
 const CURRENT_YEAR = '2025-26';
 
-interface LiveLocationData {
-    total: number;
-    accepted: number;
-    rejected: number;
-}
-
-interface LiveData {
-    [location: string]: LiveLocationData;
-}
-
 interface YearlyData {
     [year: string]: number;
 }
@@ -61,6 +52,12 @@ interface LocationStats {
     pending: number;
 }
 
+interface YearlyTotal {
+    year: string;
+    total: number;
+    source: 'Historical' | 'Live';
+}
+
 const locationColors: { [key: string]: { base: string, light: string, border: string } } = {
     'Pune':     { base: 'rgba(59, 130, 246, 1)',  light: 'rgba(147, 197, 253, 1)', border: 'rgba(37, 99, 235, 1)' },
     'Rudrapur': { base: 'rgba(34, 197, 94, 1)',   light: 'rgba(134, 239, 172, 1)', border: 'rgba(22, 163, 74, 1)' },
@@ -70,28 +67,26 @@ const locationColors: { [key: string]: { base: string, light: string, border: st
 
 export default function DirectorPage() {
     const router = useRouter();
-    const [liveData, setLiveData] = useState<LiveData | null>(null);
     const [yearlyData, setYearlyData] = useState<AllYearlyData | null>(null);
     const [reportData, setReportData] = useState<LocationStats[]>([]);
+    const [historyReportData, setHistoryReportData] = useState<{[location: string]: YearlyTotal[]}>({});
 
     useEffect(() => {
-        const liveDataObject: LiveData = {};
         const allYearlyDataObject: AllYearlyData = {};
         const allStats: LocationStats[] = [];
+        const allHistory: {[location: string]: YearlyTotal[]} = {};
 
-        // Process live and historical data for each location
         LOCATIONS.forEach(location => {
-            // Initialize yearly data for the location
             allYearlyDataObject[location] = {};
 
-            // Populate with historical data
-            historicalData.forEach(item => {
-                if (item.location === location) {
-                    allYearlyDataObject[location][item.campYear] = item.totalRegistrations;
-                }
-            });
+            const locationHistory = historicalData
+                .filter(item => item.location === location)
+                .map(item => ({
+                    year: item.campYear,
+                    total: item.totalRegistrations,
+                    source: 'Historical' as const
+                }));
 
-            // Process live data for current year
             const registrationKey = `registrations_${location}`;
             const campRegistrations: Registration[] = JSON.parse(sessionStorage.getItem(registrationKey) || '[]');
             
@@ -99,19 +94,38 @@ export default function DirectorPage() {
             const rejected = campRegistrations.filter(r => r.status === 'REJECTED').length;
             const accepted = total - rejected;
             const pending = campRegistrations.filter(r => r.status === 'REGISTERED').length;
-
-
-            liveDataObject[location] = { total, accepted, rejected };
             
-            // Add/overwrite live data for the current year
             allYearlyDataObject[location][CURRENT_YEAR] = total;
 
+            const liveDataForCurrentYear = {
+                year: CURRENT_YEAR,
+                total: total,
+                source: 'Live' as const
+            };
+            
+            const combinedData = [...locationHistory];
+            const currentYearIndex = combinedData.findIndex(d => d.year === CURRENT_YEAR);
+
+            if (currentYearIndex > -1) {
+                combinedData[currentYearIndex] = liveDataForCurrentYear;
+            } else {
+                combinedData.push(liveDataForCurrentYear);
+            }
+            
+            allHistory[location] = combinedData.sort((a, b) => a.year.localeCompare(b.year));
             allStats.push({ location, total, accepted, rejected, pending });
+
+            historicalData.forEach(item => {
+                if (item.location === location) {
+                    allYearlyDataObject[location][item.campYear] = item.totalRegistrations;
+                }
+            });
+            allYearlyDataObject[location][CURRENT_YEAR] = total;
         });
 
-        setLiveData(liveDataObject);
         setYearlyData(allYearlyDataObject);
         setReportData(allStats);
+        setHistoryReportData(allHistory);
 
     }, []);
 
@@ -233,28 +247,9 @@ export default function DirectorPage() {
     };
 
 
-    if (!liveData || !yearlyData || reportData.length === 0) {
+    if (!yearlyData || reportData.length === 0) {
         return <div>Loading analytics...</div>;
     }
-
-    const chartDataTotal = {
-        Pune: liveData.Pune.total,
-        Dharwad: liveData.Dharwad.total,
-        Rudrapur: liveData.Rudrapur.total,
-        Shegaon: liveData.Shegaon.total,
-    };
-    const chartDataAccepted = {
-        Pune: liveData.Pune.accepted,
-        Dharwad: liveData.Dharwad.accepted,
-        Rudrapur: liveData.Rudrapur.accepted,
-        Shegaon: liveData.Shegaon.accepted,
-    };
-     const chartDataRejected = {
-        Pune: liveData.Pune.rejected,
-        Dharwad: liveData.Dharwad.rejected,
-        Rudrapur: liveData.Rudrapur.rejected,
-        Shegaon: liveData.Shegaon.rejected,
-    };
 
     return (
         <div className="flex flex-col min-h-screen bg-background font-sans">
@@ -297,41 +292,8 @@ export default function DirectorPage() {
                     </div>
                 </section>
 
-                <section className="mb-12">
-                    <h2 className="text-3xl font-bold mb-6 text-center">Live Registrations ({CURRENT_YEAR})</h2>
-                    <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-3">
-                         <Card>
-                            <CardHeader className="flex flex-row items-center justify-between">
-                                <CardTitle className="text-center text-lg">Total Registrations</CardTitle>
-                                <Button variant="ghost" size="icon" onClick={() => openChartInNewWindow('LocationRegistrations', { data: chartDataTotal }, 'Total Registrations')}>
-                                    <Expand className="h-4 w-4" />
-                                </Button>
-                            </CardHeader>
-                            <CardContent><LocationRegistrationsChart data={chartDataTotal} /></CardContent>
-                        </Card>
-                         <Card>
-                            <CardHeader className="flex flex-row items-center justify-between">
-                                <CardTitle className="text-center text-lg">Accepted Registrations</CardTitle>
-                                <Button variant="ghost" size="icon" onClick={() => openChartInNewWindow('LocationRegistrations', { data: chartDataAccepted }, 'Accepted Registrations')}>
-                                    <Expand className="h-4 w-4" />
-                                </Button>
-                            </CardHeader>
-                            <CardContent><LocationRegistrationsChart data={chartDataAccepted} /></CardContent>
-                        </Card>
-                         <Card>
-                            <CardHeader className="flex flex-row items-center justify-between">
-                                <CardTitle className="text-center text-lg">Rejected Registrations</CardTitle>
-                                <Button variant="ghost" size="icon" onClick={() => openChartInNewWindow('LocationRegistrations', { data: chartDataRejected }, 'Rejected Registrations')}>
-                                    <Expand className="h-4 w-4" />
-                                </Button>
-                            </CardHeader>
-                            <CardContent><LocationRegistrationsChart data={chartDataRejected} /></CardContent>
-                        </Card>
-                    </div>
-                </section>
-                
                 <section>
-                    <h2 className="text-3xl font-bold mb-6 text-center">Year-Wise Registration Trends (2010-Present)</h2>
+                    <h2 className="text-3xl font-bold mb-6 text-center">BDC History Report (2010-Present)</h2>
                      <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-2">
                         {LOCATIONS.map(location => (
                              <Card key={location}>
@@ -341,12 +303,47 @@ export default function DirectorPage() {
                                         <Expand className="h-4 w-4" />
                                     </Button>
                                 </CardHeader>
-                                <CardContent><YearlyTrendChart data={yearlyData[location]} /></CardContent>
+                                <CardContent className="space-y-6">
+                                    <div>
+                                        <h3 className="text-md font-semibold mb-2 text-center text-gray-600">Registration Trend Chart</h3>
+                                        <YearlyTrendChart data={yearlyData[location]} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-md font-semibold mb-2 text-center text-gray-600">Historical Data Table</h3>
+                                        <div className="border rounded-lg overflow-auto max-h-60">
+                                            <Table>
+                                                <TableHeader className="bg-gray-100">
+                                                    <TableRow>
+                                                        <TableHead className="font-bold">Year</TableHead>
+                                                        <TableHead className="font-bold text-right">Registrations</TableHead>
+                                                        <TableHead className="font-bold text-right">Source</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {(historyReportData[location] || []).map(item => (
+                                                        <TableRow key={item.year}>
+                                                            <TableCell>{item.year}</TableCell>
+                                                            <TableCell className="text-right">{item.total}</TableCell>
+                                                             <TableCell className="text-right">
+                                                                <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
+                                                                    item.source === 'Live' 
+                                                                    ? 'bg-red-100 text-red-800' 
+                                                                    : 'bg-blue-100 text-blue-800'
+                                                                }`}>
+                                                                    {item.source}
+                                                                </span>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+                                    </div>
+                                </CardContent>
                             </Card>
                         ))}
                     </div>
                 </section>
-
             </main>
              <footer className="bg-gray-100 text-accent-foreground p-4 mt-8">
                 <div className="container mx-auto text-center text-sm">
