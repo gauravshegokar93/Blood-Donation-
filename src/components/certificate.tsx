@@ -17,14 +17,17 @@ export function Certificate({ name, date, event }: CertificateProps) {
         height: '210mm',
         position: 'relative',
         fontFamily: 'sans-serif',
+        // This ensures the div itself isn't invisible
+        background: 'rgba(255, 255, 255, 0.01)',
       }}
     >
        <Image
         src="/White and Red Blood Donor Simple Certificate.png"
         alt="Certificate Background"
         layout="fill"
-        objectFit="cover"
+        objectFit="contain" // Use contain to ensure the whole image is visible
         quality={100}
+        priority // Prioritize loading this image
       />
       <div
         className="print-field"

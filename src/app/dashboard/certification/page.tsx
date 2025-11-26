@@ -112,7 +112,7 @@ export default function CertificationPage() {
                                   Preview
                                 </Button>
                               </DialogTrigger>
-                              <DialogContent className="max-w-4xl p-0 border-0">
+                              <DialogContent className="max-w-4xl p-0 border-0 bg-transparent shadow-none">
                                 {certificateDetails && (
                                   <Certificate
                                     name={certificateDetails.name}
