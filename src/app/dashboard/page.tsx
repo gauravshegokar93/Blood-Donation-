@@ -48,8 +48,8 @@ export default function Dashboard() {
             const campBloodBanks: BloodBank[] = JSON.parse(sessionStorage.getItem(bloodBankKey) || '[]');
             
             const campRegisteredCount = campRegistrations.length;
-            const campAcceptedCount = campRegistrations.filter(r => r.status === 'ACCEPTED').length;
             const campRejectedCount = campRegistrations.filter(r => r.status === 'REJECTED').length;
+            const campAcceptedCount = campRegisteredCount - campRejectedCount;
             const campDonatedCount = campRegistrations.filter(r => r.status === 'DONATED').length;
             const campPendingCount = campRegistrations.filter(r => r.status === 'REGISTERED').length;
 
@@ -82,10 +82,13 @@ export default function Dashboard() {
                     agencyCounts[bank.name] = 0;
                 }
             });
+            
+            // For the status chart, we will show the explicit statuses
+            const acceptedForChart = campRegistrations.filter(r => r.status === 'ACCEPTED').length;
 
             setChartData({
                 statusData: {
-                    accepted: campAcceptedCount,
+                    accepted: acceptedForChart,
                     rejected: campRejectedCount,
                     pending: campPendingCount,
                 },
@@ -353,3 +356,5 @@ export default function Dashboard() {
         </div>
     );
 }
+
+    
