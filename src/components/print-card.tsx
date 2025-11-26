@@ -76,13 +76,6 @@ export function PrintCard({ registration, agency }: PrintCardProps) {
             >
                 {registration.bloodGroup}
             </div>
-            
-            <div 
-                className="absolute w-full text-center"
-                style={{ bottom: '3mm', left: '0', fontSize: '6pt', color: 'gray'}}
-            >
-                WADHOKAR GROUP - BLOOD DONATION CAMP {registration.year}
-            </div>
         </div>
     );
 }
