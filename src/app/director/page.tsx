@@ -103,6 +103,11 @@ export default function DirectorPage() {
         // Overwrite the historical value for the current year with live data
         if (yearlyTotals[CURRENT_YEAR] !== undefined) {
           yearlyTotals[CURRENT_YEAR] = liveDataTotalForCurrentYear;
+        } else {
+          // If current year is not in historical data, add it as live
+          if (liveDataTotalForCurrentYear > 0) {
+              yearlyTotals[CURRENT_YEAR] = liveDataTotalForCurrentYear;
+          }
         }
 
 
