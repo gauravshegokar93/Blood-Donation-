@@ -14,9 +14,8 @@ export function PrintCard({ registration, agency }: PrintCardProps) {
     
     const srNo = registrationsForAgency.findIndex(r => r.id === registration.id) + 1;
 
-
     return (
-        <div id="print-card" className="relative">
+        <div id="print-card" className="relative w-[5.12in] h-[3.75in] border-2 border-black box-border bg-white">
             <div className="print-field" style={{ top: '0.5in', left: '0.25in', fontSize: '14pt' }}>
                 <span className="font-normal">Reg. No:</span> {registration.id}
             </div>

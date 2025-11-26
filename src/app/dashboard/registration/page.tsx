@@ -12,6 +12,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { ArrowUp, ArrowDown, PlusCircle, Edit, Trash2, Printer, Ban, X } from 'lucide-react';
 import { Registration, BloodBank } from '@/lib/mock-data';
 import { PrintCard } from '@/components/print-card';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'Other'];
 const genders = ['Male', 'Female', 'Other'];
@@ -167,13 +169,40 @@ export default function RegistrationPage() {
         }
     };
 
-    const handlePrint = () => {
-        if(selectedRegistration){
-            window.print();
-        } else {
-            alert("Please select a registration to print.");
+    const handlePrint = async () => {
+        const cardElement = document.getElementById('print-card');
+        if (!cardElement) {
+            alert("Print card element not found. Please select a registration.");
+            return;
         }
-    }
+
+        // Temporarily make the element visible for capturing
+        cardElement.style.display = 'block';
+
+        const canvas = await html2canvas(cardElement, { scale: 3 });
+        
+        // Hide it again
+        cardElement.style.display = '';
+
+        const imgData = canvas.toDataURL('image/png');
+
+        // Card dimensions in inches
+        const cardWidthInches = 5.12;
+        const cardHeightInches = 3.75;
+        
+        // Create PDF with exact dimensions
+        const pdf = new jsPDF({
+            orientation: 'landscape',
+            unit: 'in',
+            format: [cardWidthInches, cardHeightInches]
+        });
+
+        pdf.addImage(imgData, 'PNG', 0, 0, cardWidthInches, cardHeightInches);
+        
+        // Open PDF in new window and trigger print dialog
+        pdf.autoPrint();
+        window.open(pdf.output('bloburl'), '_blank');
+    };
     
     const handleCancel = () => {
         setIsEditing(false);
@@ -187,7 +216,7 @@ export default function RegistrationPage() {
         if (!aValue || !bValue) return 0;
 
         // Default to descending for ID to show newest first
-        const order = (sortKey === 'id' && sortOrder === 'asc') ? 'desc' : sortOrder;
+        const order = sortOrder;
 
         if (aValue < bValue) return order === 'asc' ? -1 : 1;
         if (aValue > bValue) return order === 'asc' ? 1 : -1;
@@ -208,7 +237,7 @@ export default function RegistrationPage() {
 
     return (
         <div className="container mx-auto p-4 md:p-8">
-            <Card className="print:hidden">
+            <Card>
                 <CardHeader>
                     <CardTitle>Donor Registration</CardTitle>
                     <CardDescription>Register new donors for the blood donation camp at {location}, {year}.</CardDescription>
@@ -374,7 +403,7 @@ export default function RegistrationPage() {
                 </CardContent>
             </Card>
 
-            <div className="hidden print:block">
+            <div className="fixed -left-[9999px] top-0">
                 {selectedRegistration && (
                     <PrintCard registration={selectedRegistration} agency={selectedAgency} />
                 )}
