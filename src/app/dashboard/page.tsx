@@ -21,9 +21,6 @@ export default function Dashboard() {
         totalRegistrations: 0,
         totalAccepted: 0,
         totalRejected: 0,
-        campDonated: 0,
-        campPending: 0,
-        campBloodBanks: 0,
         recent: [] as Registration[],
     });
 
@@ -50,16 +47,12 @@ export default function Dashboard() {
             const campRegisteredCount = campRegistrations.length;
             const campRejectedCount = campRegistrations.filter(r => r.status === 'REJECTED').length;
             const campAcceptedCount = campRegisteredCount - campRejectedCount;
-            const campDonatedCount = campRegistrations.filter(r => r.status === 'DONATED').length;
             const campPendingCount = campRegistrations.filter(r => r.status === 'REGISTERED').length;
 
             setStats({
                 totalRegistrations: campRegisteredCount,
                 totalAccepted: campAcceptedCount,
                 totalRejected: campRejectedCount,
-                campDonated: campDonatedCount,
-                campPending: campPendingCount,
-                campBloodBanks: campBloodBanks.length,
                 recent: campRegistrations.slice(-5).reverse(),
             });
 
@@ -189,7 +182,7 @@ export default function Dashboard() {
                 </aside>
                 <main className="flex-grow p-4 md:p-8">
                     <h2 className="text-3xl font-bold mb-6">Welcome, Admin - ({location}, {year})</h2>
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                    <div className="grid gap-6 md:grid-cols-3">
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">
@@ -229,48 +222,6 @@ export default function Dashboard() {
                             <div className="text-2xl font-bold">{stats.totalRejected}</div>
                             <p className="text-xs text-muted-foreground">
                                 Donors declined in {location}
-                            </p>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">
-                                Camp Donations
-                            </CardTitle>
-                            <Droplets className="h-4 w-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent>
-                            <div className="text-2xl font-bold">{stats.campDonated} Units</div>
-                            <p className="text-xs text-muted-foreground">
-                                for {location}, {year}
-                            </p>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">
-                                Pending
-                            </CardTitle>
-                            <BarChart className="h-4 w-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent>
-                            <div className="text-2xl font-bold">{stats.campPending}</div>
-                            <p className="text-xs text-muted-foreground">
-                                registrations in {location}
-                            </p>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">
-                                Blood Banks
-                            </CardTitle>
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent>
-                            <div className="text-2xl font-bold">{stats.campBloodBanks}</div>
-                            <p className="text-xs text-muted-foreground">
-                                in {location} for {year}
                             </p>
                             </CardContent>
                         </Card>
@@ -356,5 +307,3 @@ export default function Dashboard() {
         </div>
     );
 }
-
-    
