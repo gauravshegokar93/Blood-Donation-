@@ -57,7 +57,7 @@ export default function RegistrationPage() {
         const registrationKey = `registrations_${loc}`;
         const bloodBankKey = `bloodBanks_${loc}`;
 
-        const campRegistrations: Registration[] = JSON.parse(sessionStorage.getItem(registrationKey) || '[]');
+        const campRegistrations: Registration[] = JSON.parse(sessionStorage.getItem(registrationKey) || '[]') || [];
         setRegistrations(campRegistrations);
         setNextRegId(generateRegistrationId(loc, campRegistrations));
 
