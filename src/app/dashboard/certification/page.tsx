@@ -68,7 +68,7 @@ export default function CertificationPage() {
 
   return (
     <>
-      <div className="container mx-auto p-4 md:p-8 print:hidden">
+      <div className="container mx-auto p-4 md:p-8 print-hidden">
         <Card>
           <CardHeader>
             <CardTitle>Certificate Generation</CardTitle>

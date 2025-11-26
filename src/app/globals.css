@@ -94,12 +94,6 @@
   .print-hidden {
     display: none;
   }
-  #print-area {
-    display: block;
-  }
-}
-
-@media print {
   body * {
     visibility: hidden;
   }
