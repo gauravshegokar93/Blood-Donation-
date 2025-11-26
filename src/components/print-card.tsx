@@ -18,60 +18,62 @@ export function PrintCard({ registration, agency }: PrintCardProps) {
             id="print-card" 
             className="relative box-border bg-white text-black"
             style={{ 
-                width: '54mm', 
-                height: '85.6mm', 
-                fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+                width: '8.5mm', 
+                height: '10mm', 
+                fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+                fontSize: '0.25mm', // Scaled down font size
+                lineHeight: '1.2'
             }}
         >
             <div 
                 className="absolute"
-                style={{ top: '10mm', left: '5mm', fontSize: '8pt' }}
+                style={{ top: '0.5mm', left: '0.5mm', whiteSpace: 'nowrap' }}
             >
-                <span className="font-normal">Reg. No:</span> {registration.id}
+                <span className="font-normal">Reg:</span> {registration.id}
             </div>
             <div 
                 className="absolute"
-                style={{ top: '10mm', right: '5mm', fontSize: '8pt' }}
+                style={{ top: '0.5mm', right: '0.5mm', whiteSpace: 'nowrap' }}
             >
-                <span className="font-normal">Sr. No:</span> {srNo > 0 ? srNo : '-'}
+                <span className="font-normal">Sr:</span> {srNo > 0 ? srNo : '-'}
             </div>
             
             <div 
                 className="absolute w-full text-center"
-                style={{ top: '22mm', left: '0', fontSize: '12pt', fontWeight: 'bold' }}
+                style={{ top: '1.5mm', left: '0', fontWeight: 'bold' }}
             >
                 {registration.name}
             </div>
 
             <div 
                 className="absolute"
-                style={{ top: '35mm', left: '5mm', fontSize: '9pt' }}
+                style={{ top: '3mm', left: '0.5mm', width: '7.5mm', wordWrap: 'break-word' }}
             >
-                <span className="font-normal">Blood Bank:</span>
+                <span className="font-normal">Bank:</span>
                 <div style={{ fontWeight: 'bold' }}>{agency?.name || 'N/A'}</div>
             </div>
 
             <div 
                 className="absolute"
-                style={{ top: '50mm', left: '5mm', fontSize: '9pt' }}
+                style={{ top: '5.5mm', left: '0.5mm', whiteSpace: 'nowrap' }}
             >
-                <span className="font-normal">Counter No:</span> <span style={{ fontWeight: 'bold' }}>{agency?.counter || 'N/A'}</span>
+                <span className="font-normal">Counter:</span> <span style={{ fontWeight: 'bold' }}>{agency?.counter || 'N/A'}</span>
             </div>
 
             <div 
                 className="absolute"
                 style={{ 
-                    top: '48mm', 
-                    right: '5mm', 
-                    fontSize: '12pt',
+                    top: '7mm', 
+                    right: '0.5mm', 
                     fontWeight: 'bold',
-                    border: '2px solid black',
+                    border: '0.1mm solid black',
                     borderRadius: '50%',
-                    width: '15mm',
-                    height: '15mm',
+                    width: '2mm',
+                    height: '2mm',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center'
+                    justifyContent: 'center',
+                    fontSize: '0.7mm'
                 }}
             >
                 {registration.bloodGroup}

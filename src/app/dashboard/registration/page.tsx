@@ -186,9 +186,9 @@ export default function RegistrationPage() {
 
         const imgData = canvas.toDataURL('image/png');
 
-        // Card dimensions in mm for CR80 ID card
-        const cardWidthMM = 54;
-        const cardHeightMM = 85.6;
+        // Card dimensions in mm
+        const cardWidthMM = 8.50;
+        const cardHeightMM = 10;
         
         const pdf = new jsPDF({
             orientation: 'portrait',
@@ -306,7 +306,7 @@ export default function RegistrationPage() {
                                     <Select value={formState.bloodGroup} onValueChange={(value) => setFormState({...formState, bloodGroup: value})} required>
                                         <SelectTrigger id="bloodGroup">
                                             <SelectValue placeholder="Select Blood Group" />
-                                        </SelectTrigger>
+                                        </Trigger>
                                         <SelectContent>
                                             {bloodGroups.map(bg => <SelectItem key={bg} value={bg}>{bg}</SelectItem>)}
                                         </SelectContent>
