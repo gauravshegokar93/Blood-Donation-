@@ -20,7 +20,7 @@ export function Certificate({ name, date, event }: CertificateProps) {
       }}
     >
       <Image
-        src="/certificate-template.png"
+        src="/White and Red Blood Donor Simple Certificate.png"
         alt="Certificate Background"
         layout="fill"
         objectFit="cover"
