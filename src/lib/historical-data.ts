@@ -4,7 +4,7 @@ export interface HistoricalData {
     totalRegistrations: number;
 }
 
-// Data based on the provided image
+// Data based on the provided user input
 const baseHistory = [
     { campYear: '2010-11', totalRegistrations: 150 },
     { campYear: '2011-12', totalRegistrations: 275 },
