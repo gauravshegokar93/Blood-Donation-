@@ -2,7 +2,7 @@
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Droplets, Users, BarChart, Calendar, LogOut, Menu, X, Banknote, UserPlus, CheckCircle, XCircle, FileText, ChevronDown, Expand } from 'lucide-react';
+import { Droplets, Users, BarChart, Calendar, LogOut, Menu, X, Banknote, UserPlus, CheckCircle, XCircle, FileText, ChevronDown, Expand, Award } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from "next/link";
@@ -162,6 +162,7 @@ export default function Dashboard() {
                         <Link href="/dashboard/registration" className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-100"><UserPlus className="h-5 w-5"/><span>Registration</span></Link>
                         <Link href="/dashboard/acceptance" className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-100"><CheckCircle className="h-5 w-5"/><span>Acceptance</span></Link>
                         <Link href="/dashboard/rejection" className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-100"><XCircle className="h-5 w-5"/><span>Rejection</span></Link>
+                         <Link href="/dashboard/certification" className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-100"><Award className="h-5 w-5"/><span>Certification</span></Link>
                         <DropdownMenu>
                             <DropdownMenuTrigger className="flex w-full items-center justify-between space-x-2 p-2 rounded-md hover:bg-gray-100 text-left text-sm">
                                <div className="flex items-center space-x-2">
