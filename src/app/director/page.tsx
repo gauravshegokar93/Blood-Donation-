@@ -24,50 +24,50 @@ interface LiveData {
 }
 
 interface YearlyData {
-    [location: string]: {
-        [year: string]: number;
-    };
+    [year: string]: number;
+}
+
+interface AllYearlyData {
+    [location: string]: YearlyData;
 }
 
 export default function DirectorPage() {
     const router = useRouter();
     const [liveData, setLiveData] = useState<LiveData | null>(null);
-    const [yearlyData, setYearlyData] = useState<YearlyData | null>(null);
+    const [yearlyData, setYearlyData] = useState<AllYearlyData | null>(null);
 
     useEffect(() => {
         const liveDataObject: LiveData = {};
-        const yearlyDataObject: YearlyData = {};
+        const allYearlyDataObject: AllYearlyData = {};
 
-        // Initialize with historical data
+        // Process live and historical data for each location
         LOCATIONS.forEach(location => {
-            yearlyDataObject[location] = {};
+            // Initialize yearly data for the location
+            allYearlyDataObject[location] = {};
+
+            // Populate with historical data
             historicalData.forEach(item => {
                 if (item.location === location) {
-                    yearlyDataObject[location][item.campYear] = item.totalRegistrations;
+                    allYearlyDataObject[location][item.campYear] = item.totalRegistrations;
                 }
             });
-        });
 
-        // Process live data for current year
-        LOCATIONS.forEach(location => {
+            // Process live data for current year
             const registrationKey = `registrations_${location}`;
             const campRegistrations: Registration[] = JSON.parse(sessionStorage.getItem(registrationKey) || '[]');
             
             const total = campRegistrations.length;
-            const accepted = campRegistrations.filter(r => r.status === 'ACCEPTED').length;
             const rejected = campRegistrations.filter(r => r.status === 'REJECTED').length;
+            const accepted = total - rejected;
 
             liveDataObject[location] = { total, accepted, rejected };
             
-            // Add live data for the current year to the yearly data object
-            if (!yearlyDataObject[location]) {
-                yearlyDataObject[location] = {};
-            }
-            yearlyDataObject[location][CURRENT_YEAR] = total;
+            // Add/overwrite live data for the current year
+            allYearlyDataObject[location][CURRENT_YEAR] = total;
         });
 
         setLiveData(liveDataObject);
-        setYearlyData(yearlyDataObject);
+        setYearlyData(allYearlyDataObject);
 
     }, []);
 
@@ -158,7 +158,7 @@ export default function DirectorPage() {
                 </section>
                 
                 <section>
-                    <h2 className="text-3xl font-bold mb-6 text-center">Year-Wise Registration Trends (2020-2025)</h2>
+                    <h2 className="text-3xl font-bold mb-6 text-center">Year-Wise Registration Trends (2010-Present)</h2>
                      <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-2">
                         {LOCATIONS.map(location => (
                              <Card key={location}>

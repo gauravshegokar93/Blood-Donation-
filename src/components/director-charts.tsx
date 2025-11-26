@@ -73,7 +73,7 @@ const commonLineOptions = {
   maintainAspectRatio: false,
   plugins: {
     legend: {
-      position: 'bottom' as const,
+      display: false,
     },
      datalabels: {
         anchor: 'end' as const,
@@ -156,19 +156,21 @@ export function LocationRegistrationsChart({ data }: { data: { [key: string]: nu
 
 
 export function YearlyTrendChart({ data }: { data: { [key: string]: number } }) {
-  const allYears = Array.from({length: 6}, (_, i) => `202${i}-${(i + 1).toString().slice(-2)}`);
-  
-  const historicalYears = allYears.filter(year => year !== '2025-26');
-  
-  const historicalValues = historicalYears.map(year => data[year] || 0);
-  const liveValue = data['2025-26'] || 0;
+  const sortedYears = Object.keys(data).sort((a, b) => a.localeCompare(b));
+  const chartLabels = sortedYears.map(y => y.split('-')[0]);
+  const chartValues = sortedYears.map(year => data[year]);
+  const currentYear = '2025-26';
+
+  const pointColors = sortedYears.map(year => year === currentYear ? 'rgba(239, 68, 68, 1)' : 'rgba(59, 130, 246, 1)');
+  const pointRadii = sortedYears.map(year => year === currentYear ? 7 : 5);
+
 
   const chartData: ChartData<'line'> = {
-    labels: allYears.map(y => y.split('-')[0]),
+    labels: chartLabels,
     datasets: [
       {
-        label: 'Historical',
-        data: [...historicalValues, liveValue], 
+        label: 'Total Registrations',
+        data: chartValues, 
         fill: true,
         backgroundColor: (context: any) => {
             const chart = context.chart;
@@ -180,9 +182,9 @@ export function YearlyTrendChart({ data }: { data: { [key: string]: number } }) 
              return gradient;
         },
         borderColor: 'rgba(59, 130, 246, 1)',
-        pointBackgroundColor: 'rgba(59, 130, 246, 1)',
-        pointRadius: 5,
-        pointHoverRadius: 7,
+        pointBackgroundColor: pointColors,
+        pointRadius: pointRadii,
+        pointHoverRadius: 8,
       },
     ],
   };
