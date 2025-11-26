@@ -179,11 +179,11 @@ export default function RegistrationPage() {
         const canvas = await html2canvas(cardElement, { scale: 4 });
         const imgData = canvas.toDataURL('image/png');
         
-        const cardWidthMM = 54;
-        const cardHeightMM = 85.6;
+        const cardWidthMM = 85.6;
+        const cardHeightMM = 54;
         
         const pdf = new jsPDF({
-            orientation: 'portrait',
+            orientation: 'landscape',
             unit: 'mm',
             format: [cardWidthMM, cardHeightMM]
         });
@@ -205,10 +205,6 @@ export default function RegistrationPage() {
         return sortOrder === 'asc' ? <ArrowUp className="h-4 w-4 ml-1 inline" /> : <ArrowDown className="h-4 w-4 ml-1 inline" />;
     };
 
-    if (!location) {
-        return <div>Loading session...</div>;
-    }
-
     const sortedRegistrations = [...registrations].sort((a, b) => {
         const aValue = a[sortKey];
         const bValue = b[sortKey];
@@ -224,6 +220,10 @@ export default function RegistrationPage() {
 
     const year = YEAR;
     const selectedAgency = agencies.find(a => a.name === selectedRegistration?.agency);
+
+    if (!location) {
+        return <div>Loading session...</div>;
+    }
 
     return (
         <div className="container mx-auto p-4 md:p-8">
@@ -297,7 +297,7 @@ export default function RegistrationPage() {
                                     <Select value={formState.bloodGroup} onValueChange={(value) => setFormState({...formState, bloodGroup: value})} required>
                                         <SelectTrigger id="bloodGroup">
                                             <SelectValue placeholder="Select Blood Group" />
-                                        </Trigger>
+                                        </SelectTrigger>
                                         <SelectContent>
                                             {bloodGroups.map(bg => <SelectItem key={bg} value={bg}>{bg}</SelectItem>)}
                                         </SelectContent>
@@ -314,7 +314,7 @@ export default function RegistrationPage() {
                                     <Select value={formState.gender} onValueChange={(value) => setFormState({...formState, gender: value as any})}>
                                         <SelectTrigger id="gender">
                                             <SelectValue placeholder="Select Gender" />
-                                        </Trigger>
+                                        </SelectTrigger>
                                         <SelectContent>
                                             {genders.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
                                         </SelectContent>

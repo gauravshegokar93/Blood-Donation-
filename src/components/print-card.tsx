@@ -18,64 +18,64 @@ export function PrintCard({ registration, agency }: PrintCardProps) {
             id="print-card" 
             className="relative box-border bg-white text-black"
             style={{ 
-                width: '54mm', 
-                height: '85.6mm', 
+                width: '85.6mm', 
+                height: '54mm', 
                 fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-                fontSize: '10pt',
-                lineHeight: '1.4'
+                fontSize: '8pt', // smaller base font size for landscape
+                lineHeight: '1.2'
             }}
         >
-            {/* Header with Title */}
-            <div className="absolute w-full text-center" style={{top: '4mm'}}>
-                <div style={{fontSize: '9pt', fontWeight: 'bold', marginTop: '1mm'}}>BLOOD DONATION CAMP {registration.year}</div>
+            {/* Header */}
+            <div className="absolute w-full text-center" style={{top: '3mm'}}>
+                <div style={{fontSize: '8pt', fontWeight: 'bold'}}>BLOOD DONATION CAMP {registration.year}</div>
             </div>
 
-            {/* Registration and Sr No */}
-            <div className="absolute" style={{ top: '15mm', left: '4mm', fontSize: '9pt' }}>
-                <span className="font-normal">Reg. No:</span> <span style={{fontWeight: 'bold'}}>{registration.id}</span>
-            </div>
-            <div className="absolute" style={{ top: '15mm', right: '4mm', fontSize: '9pt' }}>
-                <span className="font-normal">Sr. No:</span> <span style={{fontWeight: 'bold'}}>{srNo > 0 ? srNo : '-'}</span>
-            </div>
-            
-            {/* Donor Name */}
-            <div className="absolute w-full text-center" style={{ top: '25mm', left: '0', fontSize: '14pt', fontWeight: 'bold' }}>
-                {registration.name}
-            </div>
-
-            {/* Blood Bank */}
-            <div className="absolute w-full" style={{ top: '38mm', left: '4mm', fontSize: '9pt' }}>
-                 <span className="font-normal">Blood Bank:</span>
-                 <div style={{ fontWeight: 'bold', fontSize: '10pt', marginTop: '1mm', paddingRight: '4mm' }}>{agency?.name || 'N/A'}</div>
-            </div>
-
-            {/* Counter Number */}
-            <div className="absolute" style={{ top: '55mm', left: '4mm', fontSize: '9pt' }}>
-                <span className="font-normal">Counter No:</span> <span style={{ fontWeight: 'bold', fontSize: '12pt' }}>{agency?.counter || 'N/A'}</span>
-            </div>
-
-            {/* Blood Group */}
-            <div 
+             <div 
                 className="absolute"
                 style={{ 
-                    top: '52mm', 
-                    right: '4mm', 
+                    top: '3mm', 
+                    left: '26mm', 
                     fontWeight: 'bold',
                     border: '2px solid black',
                     borderRadius: '50%',
-                    width: '18mm',
-                    height: '18mm',
+                    width: '14mm',
+                    height: '14mm',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '12pt'
+                    fontSize: '10pt'
                 }}
             >
                 {registration.bloodGroup}
             </div>
+            
+            {/* Reg and Sr No */}
+            <div className="absolute" style={{ top: '10mm', left: '4mm', fontSize: '8pt' }}>
+                <span className="font-normal">Reg. No:</span> <span style={{fontWeight: 'bold'}}>{registration.id}</span>
+            </div>
+            <div className="absolute" style={{ top: '10mm', right: '4mm', fontSize: '8pt' }}>
+                <span className="font-normal">Sr. No:</span> <span style={{fontWeight: 'bold'}}>{srNo > 0 ? srNo : '-'}</span>
+            </div>
+
+            {/* Donor Name */}
+            <div className="absolute w-full" style={{ top: '18mm', left: '4mm', fontSize: '8pt' }}>
+                 <span className="font-normal">Donor Name:</span>
+                 <div style={{ fontWeight: 'bold', fontSize: '11pt', marginTop: '1mm', paddingRight: '4mm' }}>{registration.name}</div>
+            </div>
+            
+            {/* Blood Bank */}
+            <div className="absolute w-full" style={{ top: '30mm', left: '4mm', fontSize: '8pt' }}>
+                 <span className="font-normal">Blood Bank:</span>
+                 <div style={{ fontWeight: 'bold', fontSize: '9pt', marginTop: '1mm', paddingRight: '4mm' }}>{agency?.name || 'N/A'}</div>
+            </div>
+
+            {/* Counter Number */}
+            <div className="absolute" style={{ top: '42mm', left: '4mm', fontSize: '8pt' }}>
+                <span className="font-normal">Counter No:</span> <span style={{ fontWeight: 'bold', fontSize: '10pt' }}>{agency?.counter || 'N/A'}</span>
+            </div>
 
             {/* Footer */}
-            <div className="absolute w-full text-center" style={{bottom: '4mm', fontSize: '8pt', color: '#555'}}>
+            <div className="absolute w-full text-center" style={{bottom: '2mm', fontSize: '7pt', color: '#555'}}>
                  * This card is valid for the specified camp and date only *
             </div>
         </div>
