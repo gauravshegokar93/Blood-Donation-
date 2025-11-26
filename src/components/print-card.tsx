@@ -63,7 +63,7 @@ export function PrintCard({ registration, agency }: PrintCardProps) {
                 style={{ 
                     top: '48mm', 
                     right: '5mm', 
-                    fontSize: '14pt', 
+                    fontSize: '12pt',
                     fontWeight: 'bold',
                     border: '2px solid black',
                     borderRadius: '50%',
