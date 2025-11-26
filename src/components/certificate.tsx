@@ -17,47 +17,40 @@ export function Certificate({ name, date, event }: CertificateProps) {
         height: '210mm',
         position: 'relative',
         fontFamily: 'sans-serif',
+        backgroundImage: 'url("/White and Red Blood Donor Simple Certificate.png")',
+        backgroundSize: 'cover',
+        backgroundRepeat: 'no-repeat',
       }}
     >
-      <Image
-        src="/White and Red Blood Donor Simple Certificate.png"
-        alt="Certificate Background"
-        layout="fill"
-        objectFit="cover"
-        priority
-      />
       <div
+        className="print-field"
         style={{
-          position: 'absolute',
           top: '97mm',
           left: '0mm',
           right: '0mm',
           textAlign: 'center',
           fontSize: '48px',
           fontFamily: "'Brush Script MT', cursive",
-          color: '#333',
         }}
       >
         {name}
       </div>
       <div
+        className="print-field"
         style={{
-          position: 'absolute',
           bottom: '41mm',
           left: '32mm',
           fontSize: '16px',
-          color: '#333',
         }}
       >
         {date}
       </div>
       <div
+        className="print-field"
         style={{
-          position: 'absolute',
           bottom: '33mm',
           left: '32mm',
           fontSize: '16px',
-          color: '#333',
         }}
       >
         {event}
