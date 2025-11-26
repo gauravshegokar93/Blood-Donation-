@@ -8,38 +8,79 @@ interface PrintCardProps {
 }
 
 export function PrintCard({ registration, agency }: PrintCardProps) {
-    // Find the serial number for the registration within its agency
     const registrationsForAgency: Registration[] = JSON.parse(sessionStorage.getItem(`registrations_${registration.location}`) || '[]')
         .filter((r: Registration) => r.agency === (agency ? agency.name : ''));
     
     const srNo = registrationsForAgency.findIndex(r => r.id === registration.id) + 1;
 
     return (
-        <div id="print-card" className="relative w-[5.12in] h-[3.75in] border-2 border-black box-border bg-white">
-            <div className="print-field" style={{ top: '0.5in', left: '0.25in', fontSize: '14pt' }}>
+        <div 
+            id="print-card" 
+            className="relative box-border bg-white text-black"
+            style={{ 
+                width: '54mm', 
+                height: '85.6mm', 
+                fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+            }}
+        >
+            <div 
+                className="absolute"
+                style={{ top: '10mm', left: '5mm', fontSize: '8pt' }}
+            >
                 <span className="font-normal">Reg. No:</span> {registration.id}
             </div>
-            <div className="print-field" style={{ top: '0.5in', right: '0.25in', fontSize: '14pt' }}>
+            <div 
+                className="absolute"
+                style={{ top: '10mm', right: '5mm', fontSize: '8pt' }}
+            >
                 <span className="font-normal">Sr. No:</span> {srNo > 0 ? srNo : '-'}
             </div>
             
-            <div className="print-field" style={{ top: '1.2in', left: '0.25in', fontSize: '16pt' }}>
-                <span className="font-normal">Name:</span> {registration.name}
+            <div 
+                className="absolute w-full text-center"
+                style={{ top: '22mm', left: '0', fontSize: '12pt', fontWeight: 'bold' }}
+            >
+                {registration.name}
             </div>
 
-             <div className="print-field" style={{ top: '1.9in', left: '0.25in', fontSize: '14pt' }}>
-                <span className="font-normal">Blood Bank:</span> {agency?.name || 'N/A'}
+            <div 
+                className="absolute"
+                style={{ top: '35mm', left: '5mm', fontSize: '9pt' }}
+            >
+                <span className="font-normal">Blood Bank:</span>
+                <div style={{ fontWeight: 'bold' }}>{agency?.name || 'N/A'}</div>
             </div>
 
-            <div className="print-field" style={{ top: '2.6in', left: '0.25in', fontSize: '14pt' }}>
+            <div 
+                className="absolute"
+                style={{ top: '50mm', left: '5mm', fontSize: '9pt' }}
+            >
                 <span className="font-normal">Counter No:</span> {agency?.counter || 'N/A'}
             </div>
 
-             <div className="print-field" style={{ top: '2.6in', right: '0.25in', fontSize: '24pt' }}>
+            <div 
+                className="absolute"
+                style={{ 
+                    top: '45mm', 
+                    right: '5mm', 
+                    fontSize: '20pt', 
+                    fontWeight: 'bold',
+                    border: '2px solid black',
+                    borderRadius: '50%',
+                    width: '20mm',
+                    height: '20mm',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                }}
+            >
                 {registration.bloodGroup}
             </div>
             
-            <div style={{position: 'absolute', bottom: '0.1in', left: '0.25in', fontSize: '8pt', color: 'gray'}}>
+            <div 
+                className="absolute w-full text-center"
+                style={{ bottom: '3mm', left: '0', fontSize: '6pt', color: 'gray'}}
+            >
                 WADHOKAR GROUP - BLOOD DONATION CAMP {registration.year}
             </div>
         </div>

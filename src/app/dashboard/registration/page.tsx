@@ -186,18 +186,17 @@ export default function RegistrationPage() {
 
         const imgData = canvas.toDataURL('image/png');
 
-        // Card dimensions in inches
-        const cardWidthInches = 5.12;
-        const cardHeightInches = 3.75;
+        // Card dimensions in mm for CR80 ID card
+        const cardWidthMM = 54;
+        const cardHeightMM = 85.6;
         
-        // Create PDF with exact dimensions
         const pdf = new jsPDF({
-            orientation: 'landscape',
-            unit: 'in',
-            format: [cardWidthInches, cardHeightInches]
+            orientation: 'portrait',
+            unit: 'mm',
+            format: [cardWidthMM, cardHeightMM]
         });
 
-        pdf.addImage(imgData, 'PNG', 0, 0, cardWidthInches, cardHeightInches);
+        pdf.addImage(imgData, 'PNG', 0, 0, cardWidthMM, cardHeightMM);
         
         // Open PDF in new window and trigger print dialog
         pdf.autoPrint();
