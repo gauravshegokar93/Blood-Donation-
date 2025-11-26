@@ -176,17 +176,14 @@ export default function RegistrationPage() {
             return;
         }
 
-        // Temporarily make the element visible for capturing
         cardElement.style.display = 'block';
 
         const canvas = await html2canvas(cardElement, { scale: 3 });
         
-        // Hide it again
-        cardElement.style.display = '';
+        cardElement.style.display = 'none';
 
         const imgData = canvas.toDataURL('image/png');
 
-        // Card dimensions in mm
         const cardWidthMM = 8.50;
         const cardHeightMM = 10;
         
@@ -198,7 +195,6 @@ export default function RegistrationPage() {
 
         pdf.addImage(imgData, 'PNG', 0, 0, cardWidthMM, cardHeightMM);
         
-        // Open PDF in new window and trigger print dialog
         pdf.autoPrint();
         window.open(pdf.output('bloburl'), '_blank');
     };
@@ -214,7 +210,6 @@ export default function RegistrationPage() {
         const bValue = b[sortKey];
         if (!aValue || !bValue) return 0;
 
-        // Default to descending for ID to show newest first
         const order = sortOrder;
 
         if (aValue < bValue) return order === 'asc' ? -1 : 1;
@@ -402,7 +397,7 @@ export default function RegistrationPage() {
                 </CardContent>
             </Card>
 
-            <div className="fixed -left-[9999px] top-0">
+            <div id="print-card-container" className="fixed -left-[9999px] top-0">
                 {selectedRegistration && (
                     <PrintCard registration={selectedRegistration} agency={selectedAgency} />
                 )}
