@@ -74,3 +74,35 @@
     @apply bg-background text-foreground;
   }
 }
+
+@media print {
+  @page {
+    size: 5.12in 3.75in;
+    margin: 0;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  #print-card, #print-card * {
+    visibility: visible;
+  }
+
+  #print-card {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 5.12in;
+    height: 3.75in;
+    border: 2px solid black;
+    box-sizing: border-box;
+  }
+
+  .print-field {
+    position: absolute;
+    font-family: 'Times New Roman', Times, serif;
+    font-weight: bold;
+    color: black;
+  }
+}

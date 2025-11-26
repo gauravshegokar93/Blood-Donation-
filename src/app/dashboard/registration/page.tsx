@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ArrowUp, ArrowDown, PlusCircle, Edit, Trash2, Printer, Ban, X } from 'lucide-react';
 import { Registration, BloodBank } from '@/lib/mock-data';
+import { PrintCard } from '@/components/print-card';
 
 const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'Other'];
 const genders = ['Male', 'Female', 'Other'];
@@ -19,9 +20,14 @@ const YEAR = '2025-26';
 
 function generateRegistrationId(location: string, existingRegistrations: Registration[]): string {
     const locationPrefix = location.substring(0, 3).toUpperCase();
-    const nextIdNumber = existingRegistrations.length + 1;
-    const nextId = nextIdNumber.toString().padStart(4, '0');
-    return `${locationPrefix}-${nextId}`;
+    const existingIds = existingRegistrations.map(r => r.id);
+    let nextIdNumber = existingRegistrations.length + 1;
+    let nextId;
+    do {
+      nextId = `${locationPrefix}-${nextIdNumber.toString().padStart(4, '0')}`;
+      nextIdNumber++;
+    } while (existingIds.includes(nextId));
+    return nextId;
 }
 
 
@@ -39,7 +45,7 @@ export default function RegistrationPage() {
     const [nextRegId, setNextRegId] = useState('');
     
     const [sortKey, setSortKey] = useState<SortKey>('id');
-    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+    const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
     
     const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null);
     const [isEditing, setIsEditing] = useState(false);
@@ -193,10 +199,12 @@ export default function RegistrationPage() {
         return <div>Loading session...</div>;
     }
     const year = YEAR;
+    
+    const selectedAgency = agencies.find(a => a.name === selectedRegistration?.agency);
 
     return (
         <div className="container mx-auto p-4 md:p-8">
-            <Card>
+            <Card className="print:hidden">
                 <CardHeader>
                     <CardTitle>Donor Registration</CardTitle>
                     <CardDescription>Register new donors for the blood donation camp at {location}, {year}.</CardDescription>
@@ -361,6 +369,12 @@ export default function RegistrationPage() {
                     </div>
                 </CardContent>
             </Card>
+
+            <div className="hidden print:block">
+                {selectedRegistration && selectedAgency && (
+                    <PrintCard registration={selectedRegistration} agency={selectedAgency} />
+                )}
+            </div>
         </div>
     );
 }
