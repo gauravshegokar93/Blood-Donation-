@@ -64,11 +64,15 @@ export default function DirectorPage() {
 
     useEffect(() => {
         const allStats: LocationStats[] = [];
-        const yearlyTotals: { [year: string]: number } = {};
+        const yearlyTotals: { [year: string]: { total: number, sources: Set<string> } } = {};
         
         // Process historical data
         historicalData.forEach(item => {
-            yearlyTotals[item.campYear] = (yearlyTotals[item.campYear] || 0) + item.totalRegistrations;
+            if (!yearlyTotals[item.campYear]) {
+                yearlyTotals[item.campYear] = { total: 0, sources: new Set() };
+            }
+            yearlyTotals[item.campYear].total += item.totalRegistrations;
+            yearlyTotals[item.campYear].sources.add('Historical');
         });
 
         // Process live data and overwrite the current year's total
@@ -87,13 +91,25 @@ export default function DirectorPage() {
         });
 
         // Set the live data for the current year
-        yearlyTotals[CURRENT_YEAR] = liveDataTotalForCurrentYear;
+        if (!yearlyTotals[CURRENT_YEAR]) {
+             yearlyTotals[CURRENT_YEAR] = { total: 0, sources: new Set() };
+        }
+        yearlyTotals[CURRENT_YEAR].total = liveDataTotalForCurrentYear;
+        yearlyTotals[CURRENT_YEAR].sources.add('Live');
 
-        const combinedData: YearlyTotal[] = Object.entries(yearlyTotals).map(([year, total]) => ({
-            year,
-            total,
-            source: year === CURRENT_YEAR ? 'Live' : 'Historical',
-        }));
+        const combinedData: YearlyTotal[] = Object.entries(yearlyTotals).map(([year, data]) => {
+            let source: YearlyTotal['source'] = 'Historical';
+            if (data.sources.has('Live') && data.sources.has('Historical')) {
+                source = 'Mixed';
+            } else if (data.sources.has('Live')) {
+                source = 'Live';
+            }
+            return {
+                year,
+                total: data.total,
+                source,
+            };
+        });
         
         setAggregatedHistory(combinedData.sort((a, b) => a.year.localeCompare(b.year)));
         setReportData(allStats);
@@ -275,14 +291,14 @@ export default function DirectorPage() {
                      <Card>
                         <CardHeader className="flex flex-row items-center justify-between">
                             <CardTitle className="text-center text-lg">All Locations - Registration Trend</CardTitle>
-                            <Button variant="ghost" size="icon" onClick={() => openChartInNewWindow('YearlyTrend', { data: Object.fromEntries(aggregatedHistory.map(item => [item.year, item.total])) }, `Yearly Trend for All Locations`)}>
+                            <Button variant="ghost" size="icon" onClick={() => openChartInNewWindow('YearlyTrend', { data: Object.fromEntries(aggregatedHistory.map(item => [item.year.split('-')[0], item.total])) }, `Yearly Trend for All Locations`)}>
                                 <Expand className="h-4 w-4" />
                             </Button>
                         </CardHeader>
                         <CardContent className="grid grid-cols-1 lg:grid-cols-5 gap-8">
                             <div className="lg:col-span-3">
                                 <h3 className="text-md font-semibold mb-2 text-center text-gray-600">Registration Trend Chart</h3>
-                                <YearlyTrendChart data={Object.fromEntries(aggregatedHistory.map(item => [item.year, item.total]))} />
+                                <YearlyTrendChart data={Object.fromEntries(aggregatedHistory.map(item => [item.year.split('-')[0], item.total]))} />
                             </div>
                             <div className="lg:col-span-2">
                                 <h3 className="text-md font-semibold mb-2 text-center text-gray-600">Historical Data Table</h3>

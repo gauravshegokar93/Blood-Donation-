@@ -12,7 +12,7 @@ import {
   Legend,
   ChartData,
 } from 'chart.js';
-import { Bar, Line } from 'react-chartjs-2';
+import { Bar } from 'react-chartjs-2';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 
 
@@ -68,42 +68,53 @@ const commonBarOptions = {
   }
 };
 
-const commonLineOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      display: false,
-    },
-     datalabels: {
-        anchor: 'end' as const,
-        align: 'top' as const,
-        formatter: (value: number) => value > 0 ? value.toLocaleString() : '',
-        color: '#4A5568',
-        font: {
-            weight: 'bold' as const
-        }
-     },
-  },
-  scales: {
-    y: {
-      beginAtZero: true,
-      grid: {
-        drawOnChartArea: false,
+const yearlyTrendBarOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { 
+          display: false
       },
-      ticks: { display: false }
+      title: { 
+          display: false, 
+      },
+      datalabels: {
+          anchor: 'end' as const,
+          align: 'top' as const,
+          font: {
+              weight: 'bold' as const,
+          },
+          color: '#4A5568',
+          formatter: (value: number) => {
+              return value > 0 ? value.toLocaleString() : '';
+          },
+      },
     },
-    x: {
-         grid: {
-             display: false
-         }
+    scales: {
+        y: { 
+            beginAtZero: true,
+            ticks: {
+                padding: 10,
+            },
+            grid: {
+                drawOnChartArea: false,
+            }
+        },
+        x: {
+             ticks: {
+                padding: 5,
+            },
+            grid: {
+                display: false,
+            }
+        }
+    },
+    elements: {
+        bar: {
+            borderRadius: 5,
+            borderWidth: 2,
+        }
     }
-  },
-  elements: {
-    line: {
-      tension: 0.1,
-    }
-  }
 };
 
 
@@ -157,41 +168,41 @@ export function LocationRegistrationsChart({ data }: { data: { [key: string]: nu
 
 export function YearlyTrendChart({ data }: { data: { [key: string]: number } }) {
   const sortedYears = Object.keys(data).sort((a, b) => a.localeCompare(b));
-  const chartLabels = sortedYears.map(y => y.split('-')[0]);
+  const chartLabels = sortedYears;
   const chartValues = sortedYears.map(year => data[year]);
-  const currentYear = '2025-26';
+  const currentYear = new Date().getFullYear().toString();
 
-  const pointColors = sortedYears.map(year => year === currentYear ? 'rgba(239, 68, 68, 1)' : 'rgba(59, 130, 246, 1)');
-  const pointRadii = sortedYears.map(year => year === currentYear ? 7 : 5);
-
-
-  const chartData: ChartData<'line'> = {
+  const chartData: ChartData<'bar'> = {
     labels: chartLabels,
     datasets: [
       {
         label: 'Total Registrations',
-        data: chartValues, 
-        fill: true,
+        data: chartValues,
         backgroundColor: (context: any) => {
-            const chart = context.chart;
-            const {ctx, chartArea} = chart;
-            if (!chartArea) { return; }
-             const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
-             gradient.addColorStop(0, 'rgba(59, 130, 246, 0)');
-             gradient.addColorStop(1, 'rgba(59, 130, 246, 0.4)');
-             return gradient;
+            const { ctx, chartArea, dataIndex } = context.chart;
+            if (!chartArea || !chartLabels[dataIndex]) { return 'rgba(0,0,0,0.1)'; }
+            
+            const isLive = chartLabels[dataIndex] === currentYear;
+            const baseColor = isLive ? 'rgba(239, 68, 68, 1)' : 'rgba(59, 130, 246, 1)';
+            const lightColor = isLive ? 'rgba(252, 165, 165, 1)' : 'rgba(147, 197, 253, 1)';
+
+            const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+            gradient.addColorStop(0, baseColor);
+            gradient.addColorStop(1, lightColor);
+            return gradient;
         },
-        borderColor: 'rgba(59, 130, 246, 1)',
-        pointBackgroundColor: pointColors,
-        pointRadius: pointRadii,
-        pointHoverRadius: 8,
+        borderColor: (context: any) => {
+            if (!chartLabels[context.dataIndex]) return 'rgba(0,0,0,1)';
+            const isLive = chartLabels[context.dataIndex] === currentYear;
+            return isLive ? 'rgba(220, 38, 38, 1)' : 'rgba(37, 99, 235, 1)';
+        },
       },
     ],
   };
 
   return (
     <div style={{ height: '350px' }}>
-      <Line data={chartData} options={commonLineOptions as any} />
+      <Bar data={chartData} options={yearlyTrendBarOptions as any} />
     </div>
   );
 }

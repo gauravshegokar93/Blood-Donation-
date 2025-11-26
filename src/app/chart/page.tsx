@@ -54,6 +54,8 @@ export default function ChartViewerPage() {
                 titleText = 'Blood Group Distribution';
             } else if (parsedData.chartType === 'Agency') {
                 titleText = 'Registrations by Agency';
+            } else if (parsedData.chartType === 'YearlyTrend') {
+                titleText = 'Yearly Registration Trend';
             }
 
             // Ensure plugins are present and add title
