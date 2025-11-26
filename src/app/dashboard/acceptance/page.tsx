@@ -41,8 +41,15 @@ export default function AcceptancePage() {
             return;
         }
         
-        if(campRegistrations[registrationIndex].status !== 'REGISTERED') {
-            alert(`Registration ID "${regId}" cannot be accepted. Current status: ${campRegistrations[registrationIndex].status}.`);
+        const currentStatus = campRegistrations[registrationIndex].status;
+
+        if (currentStatus === 'REJECTED') {
+            alert(`Registration ID "${regId}" has been rejected and cannot be accepted.`);
+            return;
+        }
+
+        if(currentStatus !== 'REGISTERED') {
+            alert(`Registration ID "${regId}" cannot be accepted. Current status: ${currentStatus}.`);
             return;
         }
         
