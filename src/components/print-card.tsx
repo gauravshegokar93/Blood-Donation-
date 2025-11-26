@@ -55,20 +55,20 @@ export function PrintCard({ registration, agency }: PrintCardProps) {
                 className="absolute"
                 style={{ top: '50mm', left: '5mm', fontSize: '9pt' }}
             >
-                <span className="font-normal">Counter No:</span> {agency?.counter || 'N/A'}
+                <span className="font-normal">Counter No:</span> <span style={{ fontWeight: 'bold' }}>{agency?.counter || 'N/A'}</span>
             </div>
 
             <div 
                 className="absolute"
                 style={{ 
-                    top: '45mm', 
+                    top: '48mm', 
                     right: '5mm', 
-                    fontSize: '20pt', 
+                    fontSize: '14pt', 
                     fontWeight: 'bold',
                     border: '2px solid black',
                     borderRadius: '50%',
-                    width: '20mm',
-                    height: '20mm',
+                    width: '15mm',
+                    height: '15mm',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center'
