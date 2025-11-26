@@ -65,16 +65,14 @@ export default function DirectorPage() {
     useEffect(() => {
         const allStats: LocationStats[] = [];
         const yearlyTotals: { [year: string]: number } = {};
-        let liveDataTotal = 0;
-
+        
         // Process historical data
         historicalData.forEach(item => {
-            if (item.campYear !== CURRENT_YEAR) {
-                yearlyTotals[item.campYear] = (yearlyTotals[item.campYear] || 0) + item.totalRegistrations;
-            }
+            yearlyTotals[item.campYear] = (yearlyTotals[item.campYear] || 0) + item.totalRegistrations;
         });
 
-        // Process live and status data
+        // Process live data and overwrite the current year's total
+        let liveDataTotalForCurrentYear = 0;
         LOCATIONS.forEach(location => {
             const registrationKey = `registrations_${location}`;
             const campRegistrations: Registration[] = JSON.parse(sessionStorage.getItem(registrationKey) || '[]');
@@ -85,11 +83,11 @@ export default function DirectorPage() {
             const pending = campRegistrations.filter(r => r.status === 'REGISTERED').length;
             
             allStats.push({ location, total, accepted, rejected, pending });
-            liveDataTotal += total;
+            liveDataTotalForCurrentYear += total;
         });
 
-        // Add live data for the current year
-        yearlyTotals[CURRENT_YEAR] = liveDataTotal;
+        // Set the live data for the current year
+        yearlyTotals[CURRENT_YEAR] = liveDataTotalForCurrentYear;
 
         const combinedData: YearlyTotal[] = Object.entries(yearlyTotals).map(([year, total]) => ({
             year,
@@ -100,7 +98,7 @@ export default function DirectorPage() {
         setAggregatedHistory(combinedData.sort((a, b) => a.year.localeCompare(b.year)));
         setReportData(allStats);
 
-    }, []);
+    }, [router]);
 
     const handleLogout = () => {
         sessionStorage.clear();
@@ -294,7 +292,7 @@ export default function DirectorPage() {
                                             <TableRow>
                                                 <TableHead className="font-bold">Year</TableHead>
                                                 <TableHead className="font-bold text-right">Total Registrations</TableHead>
-                                                <TableHead className="font-bold text-right">Source</TableHead>
+                                                <TableHead className="font-bold text-center">Source</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -302,7 +300,7 @@ export default function DirectorPage() {
                                                 <TableRow key={item.year}>
                                                     <TableCell>{item.year}</TableCell>
                                                     <TableCell className="text-right">{item.total.toLocaleString()}</TableCell>
-                                                     <TableCell className="text-right">
+                                                     <TableCell className="text-center">
                                                         <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
                                                             item.source === 'Live' 
                                                             ? 'bg-red-100 text-red-800' 
