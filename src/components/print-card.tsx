@@ -27,7 +27,6 @@ export function PrintCard({ registration, agency }: PrintCardProps) {
         >
             {/* Header with Title */}
             <div className="absolute w-full text-center" style={{top: '4mm'}}>
-                <div style={{fontSize: '11pt', fontWeight: 'bold', color: '#C00000'}}>WADHOKAR GROUP OF COMPANIES</div>
                 <div style={{fontSize: '9pt', fontWeight: 'bold', marginTop: '1mm'}}>BLOOD DONATION CAMP {registration.year}</div>
             </div>
 

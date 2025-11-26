@@ -200,18 +200,6 @@ export default function RegistrationPage() {
         setFormState(initialNewRegState);
     };
 
-    const sortedRegistrations = [...registrations].sort((a, b) => {
-        const aValue = a[sortKey];
-        const bValue = b[sortKey];
-        if (!aValue || !bValue) return 0;
-
-        const order = sortOrder;
-
-        if (aValue < bValue) return order === 'asc' ? -1 : 1;
-        if (aValue > bValue) return order === 'asc' ? 1 : -1;
-        return 0;
-    }).slice(0, 30);
-    
     const renderSortArrow = (key: SortKey) => {
         if (sortKey !== key) return null;
         return sortOrder === 'asc' ? <ArrowUp className="h-4 w-4 ml-1 inline" /> : <ArrowDown className="h-4 w-4 ml-1 inline" />;
@@ -220,6 +208,20 @@ export default function RegistrationPage() {
     if (!location) {
         return <div>Loading session...</div>;
     }
+
+    const sortedRegistrations = [...registrations].sort((a, b) => {
+        const aValue = a[sortKey];
+        const bValue = b[sortKey];
+        if (aValue === undefined || aValue === null) return 1;
+        if (bValue === undefined || bValue === null) return -1;
+    
+        const order = sortOrder;
+    
+        if (aValue < bValue) return order === 'asc' ? -1 : 1;
+        if (aValue > bValue) return order === 'asc' ? 1 : -1;
+        return 0;
+    }).slice(0, 30);
+
     const year = YEAR;
     const selectedAgency = agencies.find(a => a.name === selectedRegistration?.agency);
 
