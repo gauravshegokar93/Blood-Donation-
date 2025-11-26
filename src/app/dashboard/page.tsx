@@ -4,7 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Droplets, Users, BarChart, Calendar, LogOut, Menu, X, Banknote, UserPlus, CheckCircle, XCircle, FileText, ChevronDown, Expand, Award } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from "next/link";
 import { Registration, BloodBank } from "@/lib/mock-data";
 import { RegistrationStatusChart, BloodGroupChart, AgencyChart } from '@/components/dashboard-charts';
@@ -28,6 +28,57 @@ export default function Dashboard() {
         bloodGroupData: {},
         agencyData: {},
     });
+    
+    const [recentRegistrations, setRecentRegistrations] = useState<Registration[]>([]);
+
+    const loadDashboardData = useCallback((currentLocation: string) => {
+        const registrationKey = `registrations_${currentLocation}`;
+        const bloodBankKey = `bloodBanks_${currentLocation}`;
+
+        const campRegistrations: Registration[] = JSON.parse(sessionStorage.getItem(registrationKey) || '[]');
+        const campBloodBanks: BloodBank[] = JSON.parse(sessionStorage.getItem(bloodBankKey) || '[]');
+        
+        const campRegisteredCount = campRegistrations.length;
+        const campRejectedCount = campRegistrations.filter(r => r.status === 'REJECTED').length;
+        const campAcceptedCount = campRegistrations.filter(r => r.status === 'ACCEPTED').length;
+        const campPendingCount = campRegistrations.filter(r => r.status === 'REGISTERED').length;
+
+        setStats({
+            totalRegistrations: campRegisteredCount,
+            totalAccepted: campAcceptedCount,
+            totalRejected: campRejectedCount,
+        });
+
+        const bloodGroupCounts = campRegistrations.reduce((acc, reg) => {
+            acc[reg.bloodGroup] = (acc[reg.bloodGroup] || 0) + 1;
+            return acc;
+        }, {} as {[key: string]: number});
+        
+        const agencyCounts = campRegistrations.reduce((acc, reg) => {
+             if (reg.agency) {
+                acc[reg.agency] = (acc[reg.agency] || 0) + 1;
+            }
+            return acc;
+        }, {} as {[key: string]: number});
+
+        campBloodBanks.forEach(bank => {
+            if (!agencyCounts[bank.name]) {
+                agencyCounts[bank.name] = 0;
+            }
+        });
+        
+        setChartData({
+            statusData: {
+                accepted: campAcceptedCount,
+                rejected: campRejectedCount,
+                pending: campPendingCount,
+            },
+            bloodGroupData: bloodGroupCounts,
+            agencyData: agencyCounts,
+        });
+
+        setRecentRegistrations(campRegistrations.slice(-5).reverse());
+    }, []);
 
     useEffect(() => {
         const savedLocation = sessionStorage.getItem('bdcLocation');
@@ -36,58 +87,18 @@ export default function Dashboard() {
             router.push('/');
         } else {
             setLocation(savedLocation);
-            
-            const registrationKey = `registrations_${savedLocation}`;
-            const bloodBankKey = `bloodBanks_${savedLocation}`;
+            loadDashboardData(savedLocation);
 
-            const campRegistrations: Registration[] = JSON.parse(sessionStorage.getItem(registrationKey) || '[]');
-            const campBloodBanks: BloodBank[] = JSON.parse(sessionStorage.getItem(bloodBankKey) || '[]');
-            
-            const campRegisteredCount = campRegistrations.length;
-            const campRejectedCount = campRegistrations.filter(r => r.status === 'REJECTED').length;
-            const campAcceptedCount = campRegisteredCount - campRejectedCount;
-            const campPendingCount = campRegistrations.filter(r => r.status === 'REGISTERED').length;
+            // Add event listener to refresh data on tab focus
+            const handleFocus = () => loadDashboardData(savedLocation);
+            window.addEventListener('focus', handleFocus);
 
-            setStats({
-                totalRegistrations: campRegisteredCount,
-                totalAccepted: campAcceptedCount,
-                totalRejected: campRejectedCount,
-            });
-
-            // Prepare data for charts
-            const bloodGroupCounts = campRegistrations.reduce((acc, reg) => {
-                acc[reg.bloodGroup] = (acc[reg.bloodGroup] || 0) + 1;
-                return acc;
-            }, {} as {[key: string]: number});
-            
-            const agencyCounts = campRegistrations.reduce((acc, reg) => {
-                 if (reg.agency) {
-                    acc[reg.agency] = (acc[reg.agency] || 0) + 1;
-                }
-                return acc;
-            }, {} as {[key: string]: number});
-
-            // Ensure all agencies from the blood bank list are present, even if with 0 registrations
-            campBloodBanks.forEach(bank => {
-                if (!agencyCounts[bank.name]) {
-                    agencyCounts[bank.name] = 0;
-                }
-            });
-            
-            // For the status chart, we will show the explicit statuses
-            const acceptedForChart = campRegistrations.filter(r => r.status === 'ACCEPTED').length;
-
-            setChartData({
-                statusData: {
-                    accepted: acceptedForChart,
-                    rejected: campRejectedCount,
-                    pending: campPendingCount,
-                },
-                bloodGroupData: bloodGroupCounts,
-                agencyData: agencyCounts,
-            });
+            // Cleanup listener on component unmount
+            return () => {
+                window.removeEventListener('focus', handleFocus);
+            };
         }
-    }, [router]);
+    }, [router, loadDashboardData]);
 
     const handleLogout = () => {
         sessionStorage.clear();
@@ -272,7 +283,7 @@ export default function Dashboard() {
                             <CardContent>
                                 {stats.totalRegistrations > 0 ? (
                                     <ul className="space-y-2">
-                                        {campRegistrations.slice(-5).reverse().map(reg => (
+                                        {recentRegistrations.map(reg => (
                                             <li key={reg.id} className="flex justify-between items-center p-2 rounded-md bg-gray-50">
                                                 <div>
                                                     <p className="font-semibold">{reg.name} <span className="font-normal text-muted-foreground">({reg.bloodGroup})</span></p>
@@ -304,15 +315,3 @@ export default function Dashboard() {
           </footer>
         </div>
     );
-}
-
-// A helper to get camp registrations, useful for the recent registrations list.
-// Note: This is a simplified approach. In a real app, this logic might be in a shared hook or service.
-let campRegistrations: Registration[] = [];
-if (typeof window !== 'undefined') {
-    const savedLocation = sessionStorage.getItem('bdcLocation');
-    if (savedLocation) {
-        const registrationKey = `registrations_${savedLocation}`;
-        campRegistrations = JSON.parse(sessionStorage.getItem(registrationKey) || '[]');
-    }
-}
