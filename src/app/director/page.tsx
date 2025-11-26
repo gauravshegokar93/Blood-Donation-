@@ -9,6 +9,28 @@ import { LocationRegistrationsChart, YearlyTrendChart } from '@/components/direc
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { Bar } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ChartDataLabels
+);
+
 
 const LOCATIONS = ['Pune', 'Rudrapur', 'Dharwad', 'Shegaon'];
 const CURRENT_YEAR = '2025-26';
@@ -31,14 +53,31 @@ interface AllYearlyData {
     [location: string]: YearlyData;
 }
 
+interface LocationStats {
+    location: string;
+    total: number;
+    accepted: number;
+    rejected: number;
+    pending: number;
+}
+
+const locationColors: { [key: string]: { base: string, light: string, border: string } } = {
+    'Pune':     { base: 'rgba(59, 130, 246, 1)',  light: 'rgba(147, 197, 253, 1)', border: 'rgba(37, 99, 235, 1)' },
+    'Rudrapur': { base: 'rgba(34, 197, 94, 1)',   light: 'rgba(134, 239, 172, 1)', border: 'rgba(22, 163, 74, 1)' },
+    'Dharwad':  { base: 'rgba(249, 115, 22, 1)',  light: 'rgba(253, 186, 116, 1)', border: 'rgba(217, 119, 6, 1)'},
+    'Shegaon':  { base: 'rgba(168, 85, 247, 1)', light: 'rgba(216, 180, 254, 1)', border: 'rgba(147, 51, 234, 1)'},
+};
+
 export default function DirectorPage() {
     const router = useRouter();
     const [liveData, setLiveData] = useState<LiveData | null>(null);
     const [yearlyData, setYearlyData] = useState<AllYearlyData | null>(null);
+    const [reportData, setReportData] = useState<LocationStats[]>([]);
 
     useEffect(() => {
         const liveDataObject: LiveData = {};
         const allYearlyDataObject: AllYearlyData = {};
+        const allStats: LocationStats[] = [];
 
         // Process live and historical data for each location
         LOCATIONS.forEach(location => {
@@ -59,15 +98,20 @@ export default function DirectorPage() {
             const total = campRegistrations.length;
             const rejected = campRegistrations.filter(r => r.status === 'REJECTED').length;
             const accepted = total - rejected;
+            const pending = campRegistrations.filter(r => r.status === 'REGISTERED').length;
+
 
             liveDataObject[location] = { total, accepted, rejected };
             
             // Add/overwrite live data for the current year
             allYearlyDataObject[location][CURRENT_YEAR] = total;
+
+            allStats.push({ location, total, accepted, rejected, pending });
         });
 
         setLiveData(liveDataObject);
         setYearlyData(allYearlyDataObject);
+        setReportData(allStats);
 
     }, []);
 
@@ -76,12 +120,120 @@ export default function DirectorPage() {
         router.push('/');
     };
 
-    const openChartInNewWindow = (chartType: string, chartData: any) => {
-        sessionStorage.setItem('chartViewData', JSON.stringify({ chartType, chartData }));
+    const openChartInNewWindow = (chartType: string, chartData: any, title?: string) => {
+        const data = {
+            chartType,
+            chartData: {
+                ...chartData,
+                title: title
+            }
+        }
+        sessionStorage.setItem('chartViewData', JSON.stringify(data));
         window.open('/chart', '_blank', 'width=1000,height=700');
     };
 
-    if (!liveData || !yearlyData) {
+    const getChartOptions = (location: string) => ({
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { 
+                display: false
+            },
+            title: { 
+                display: false,
+            },
+            datalabels: {
+                anchor: 'end' as const,
+                align: 'top' as const,
+                color: '#4A5568',
+                font: {
+                    weight: 'bold' as const,
+                    size: 14,
+                },
+                 formatter: (value: number) => value > 0 ? value : '',
+            },
+        },
+        scales: {
+            y: { 
+                beginAtZero: true,
+                ticks: { display: false },
+                grid: { drawOnChartArea: false, }
+            },
+            x: {
+                grid: { display: false, },
+                ticks: {
+                    color: '#333',
+                    font: {
+                        weight: 'bold' as const,
+                    }
+                }
+            }
+        },
+        elements: {
+            bar: {
+                borderRadius: 4,
+            }
+        }
+    });
+
+    const getChartData = (item: LocationStats) => {
+      const colors = {
+        total:    locationColors[item.location] || { base: 'rgba(100,100,100,1)', light: 'rgba(150,150,150,1)', border: 'rgba(80,80,80,1)' },
+        accepted: { base: 'rgba(34, 197, 94, 1)',   light: 'rgba(134, 239, 172, 1)', border: 'rgba(22, 163, 74, 1)' },
+        rejected: { base: 'rgba(239, 68, 68, 1)',   light: 'rgba(252, 165, 165, 1)', border: 'rgba(220, 38, 38, 1)' }
+      };
+      
+      const barColors = [colors.total, colors.accepted, colors.rejected];
+
+      return {
+        labels: ['Total', 'Accepted', 'Rejected'],
+        datasets: [
+            {
+                label: 'Registrations',
+                data: [item.total, item.accepted, item.rejected],
+                backgroundColor: (context: any) => {
+                    const { ctx, chartArea, dataIndex } = context.chart;
+                    if (!chartArea) { return; }
+                    
+                    const selectedColor = barColors[dataIndex];
+                    if(!selectedColor) return 'rgba(0,0,0,0.1)';
+
+                    const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+                    gradient.addColorStop(0, selectedColor.base);
+                    gradient.addColorStop(1, selectedColor.light);
+                    return gradient;
+                },
+                borderColor: barColors.map(c => c.border),
+                borderWidth: 2,
+            },
+        ],
+      };
+    };
+
+    const openAllLocationsChartInNewWindow = (item: LocationStats) => {
+        const chartViewData = {
+            chartType: 'Bar',
+            chartData: {
+                data: getChartData(item),
+                options: {
+                    ...getChartOptions(item.location),
+                    plugins: {
+                        ...getChartOptions(item.location).plugins,
+                        title: {
+                            display: true,
+                            text: `Registration Status for ${item.location}`,
+                            font: { size: 18 }
+                        }
+                    }
+                }
+            }
+        };
+        sessionStorage.setItem('chartViewData', JSON.stringify(chartViewData));
+        window.open('/chart', '_blank', 'width=800,height=600');
+    };
+
+
+    if (!liveData || !yearlyData || reportData.length === 0) {
         return <div>Loading analytics...</div>;
     }
 
@@ -124,13 +276,34 @@ export default function DirectorPage() {
             </header>
 
             <main className="flex-grow p-4 md:p-8">
+                 <section className="mb-12">
+                    <h2 className="text-3xl font-bold mb-6 text-center">BDC Status Report - All Locations ({CURRENT_YEAR})</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                        {reportData.map(item => (
+                            <Card key={item.location} className="shadow-md hover:shadow-lg transition-shadow duration-300 border-l-4" style={{borderLeftColor: locationColors[item.location]?.base}}>
+                                <CardHeader className="flex flex-row items-center justify-between">
+                                    <CardTitle style={{color: locationColors[item.location]?.base}}>{item.location}</CardTitle>
+                                    <Button variant="ghost" size="icon" onClick={() => openAllLocationsChartInNewWindow(item)}>
+                                        <Expand className="h-4 w-4" />
+                                    </Button>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="h-64 relative">
+                                        <Bar options={getChartOptions(item.location) as any} data={getChartData(item)} />
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                </section>
+
                 <section className="mb-12">
                     <h2 className="text-3xl font-bold mb-6 text-center">Live Registrations ({CURRENT_YEAR})</h2>
                     <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-3">
                          <Card>
                             <CardHeader className="flex flex-row items-center justify-between">
                                 <CardTitle className="text-center text-lg">Total Registrations</CardTitle>
-                                <Button variant="ghost" size="icon" onClick={() => openChartInNewWindow('LocationRegistrations', { title: 'Total Registrations', data: chartDataTotal })}>
+                                <Button variant="ghost" size="icon" onClick={() => openChartInNewWindow('LocationRegistrations', { data: chartDataTotal }, 'Total Registrations')}>
                                     <Expand className="h-4 w-4" />
                                 </Button>
                             </CardHeader>
@@ -139,7 +312,7 @@ export default function DirectorPage() {
                          <Card>
                             <CardHeader className="flex flex-row items-center justify-between">
                                 <CardTitle className="text-center text-lg">Accepted Registrations</CardTitle>
-                                <Button variant="ghost" size="icon" onClick={() => openChartInNewWindow('LocationRegistrations', { title: 'Accepted Registrations', data: chartDataAccepted })}>
+                                <Button variant="ghost" size="icon" onClick={() => openChartInNewWindow('LocationRegistrations', { data: chartDataAccepted }, 'Accepted Registrations')}>
                                     <Expand className="h-4 w-4" />
                                 </Button>
                             </CardHeader>
@@ -148,7 +321,7 @@ export default function DirectorPage() {
                          <Card>
                             <CardHeader className="flex flex-row items-center justify-between">
                                 <CardTitle className="text-center text-lg">Rejected Registrations</CardTitle>
-                                <Button variant="ghost" size="icon" onClick={() => openChartInNewWindow('LocationRegistrations', { title: 'Rejected Registrations', data: chartDataRejected })}>
+                                <Button variant="ghost" size="icon" onClick={() => openChartInNewWindow('LocationRegistrations', { data: chartDataRejected }, 'Rejected Registrations')}>
                                     <Expand className="h-4 w-4" />
                                 </Button>
                             </CardHeader>
@@ -164,7 +337,7 @@ export default function DirectorPage() {
                              <Card key={location}>
                                 <CardHeader className="flex flex-row items-center justify-between">
                                     <CardTitle className="text-center text-lg">{location}</CardTitle>
-                                    <Button variant="ghost" size="icon" onClick={() => openChartInNewWindow('YearlyTrend', { title: `Yearly Trend for ${location}`, data: yearlyData[location] })}>
+                                    <Button variant="ghost" size="icon" onClick={() => openChartInNewWindow('YearlyTrend', { data: yearlyData[location] }, `Yearly Trend for ${location}`)}>
                                         <Expand className="h-4 w-4" />
                                     </Button>
                                 </CardHeader>

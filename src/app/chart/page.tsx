@@ -66,8 +66,19 @@ export default function ChartViewerPage() {
                 font: { size: 24, weight: 'bold' },
                 padding: { top: 10, bottom: 30 }
             };
-
-            setChartInfo(parsedData);
+            
+            // For Bar charts from director view, we need to pass data differently
+            if (parsedData.chartType === 'Bar' && parsedData.chartData.data) {
+                 setChartInfo({
+                    chartType: 'Bar',
+                    chartData: {
+                        data: parsedData.chartData.data,
+                        options: parsedData.chartData.options,
+                    }
+                 });
+            } else {
+                 setChartInfo(parsedData);
+            }
         }
     }, []);
 
