@@ -72,7 +72,7 @@ export default function DirectorPage() {
             
             const total = campRegistrations.length;
             const rejected = campRegistrations.filter(r => r.status === 'REJECTED').length;
-            const accepted = total - rejected;
+            const accepted = campRegistrations.filter(r => r.status === 'ACCEPTED').length;
             const pending = campRegistrations.filter(r => r.status === 'REGISTERED').length;
             
             allStats.push({ location, total, accepted, rejected, pending });
@@ -88,11 +88,11 @@ export default function DirectorPage() {
             if (!yearlyTotals[year]) {
                 yearlyTotals[year] = 0;
             }
-            // Since historical data is now per-location, we sum it up
-            yearlyTotals[year] += item.totalRegistrations * LOCATIONS.length;
+            // Correctly add the total from the historical data file
+            yearlyTotals[year] += item.totalRegistrations;
         });
 
-        // Process live data from all locations
+        // Process live data from all locations for the current year
         let liveDataTotalForCurrentYear = 0;
         LOCATIONS.forEach(location => {
             const registrationKey = `registrations_${location}`;
@@ -100,8 +100,10 @@ export default function DirectorPage() {
             liveDataTotalForCurrentYear += campRegistrations.length;
         });
         
-        // The mock-data `year` is '2025-26', we'll use '2025' to match historical data format
-        yearlyTotals[CURRENT_YEAR] = liveDataTotalForCurrentYear;
+        // Overwrite the historical value for the current year with live data
+        if (yearlyTotals[CURRENT_YEAR] !== undefined) {
+          yearlyTotals[CURRENT_YEAR] = liveDataTotalForCurrentYear;
+        }
 
 
         const combinedData: YearlyTotal[] = Object.entries(yearlyTotals).map(([year, total]) => ({

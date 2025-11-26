@@ -1,12 +1,11 @@
 
 export interface HistoricalData {
-    location: string;
     campYear: string;
     totalRegistrations: number;
 }
 
 // Data based on the provided user input, sorted by year.
-const baseHistory = [
+export const historicalData: HistoricalData[] = [
     { campYear: '2010', totalRegistrations: 150 },
     { campYear: '2011', totalRegistrations: 275 },
     { campYear: '2012', totalRegistrations: 375 },
@@ -25,17 +24,3 @@ const baseHistory = [
     { campYear: '2025', totalRegistrations: 1963 },
     { campYear: '2026', totalRegistrations: 0 },
 ];
-
-const locations = ['Pune', 'Rudrapur', 'Dharwad', 'Shegaon'];
-
-// This expands the base history for each location. 
-// The Director Dashboard will aggregate this data to show the combined totals.
-export const historicalData: HistoricalData[] = locations.flatMap(location => 
-    baseHistory.map(historyItem => ({
-        ...historyItem,
-        location: location,
-        // The totalRegistrations are now divided by the number of locations 
-        // so that when aggregated in the director view, they sum up to the correct total.
-        totalRegistrations: Math.round(historyItem.totalRegistrations / locations.length)
-    }))
-);
