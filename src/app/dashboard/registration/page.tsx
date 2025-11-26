@@ -185,8 +185,12 @@ export default function RegistrationPage() {
         const aValue = a[sortKey];
         const bValue = b[sortKey];
         if (!aValue || !bValue) return 0;
-        if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
-        if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
+
+        // Default to descending for ID to show newest first
+        const order = (sortKey === 'id' && sortOrder === 'asc') ? 'desc' : sortOrder;
+
+        if (aValue < bValue) return order === 'asc' ? -1 : 1;
+        if (aValue > bValue) return order === 'asc' ? 1 : -1;
         return 0;
     }).slice(0, 30);
     
@@ -240,7 +244,7 @@ export default function RegistrationPage() {
                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="space-y-2">
                                     <Label>Reg. ID</Label>
-                                    <Input value={isEditing ? selectedRegistration?.id || '' : nextRegId} readOnly className="bg-gray-200" />
+                                    <Input value={isEditing ? selectedRegistration?.id || '' : nextRegId} readOnly className="bg-gray-200" placeholder="e.g., PUN-0001"/>
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Limit</Label>
@@ -371,7 +375,7 @@ export default function RegistrationPage() {
             </Card>
 
             <div className="hidden print:block">
-                {selectedRegistration && selectedAgency && (
+                {selectedRegistration && (
                     <PrintCard registration={selectedRegistration} agency={selectedAgency} />
                 )}
             </div>
