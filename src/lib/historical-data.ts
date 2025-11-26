@@ -4,8 +4,7 @@ export interface HistoricalData {
     totalRegistrations: number;
 }
 
-// Data based on the provided image for a single location (assumed Pune for example)
-// This data will be used for all locations for demonstration purposes.
+// Data based on the provided image
 const baseHistory = [
     { campYear: '2010-11', totalRegistrations: 150 },
     { campYear: '2011-12', totalRegistrations: 275 },
@@ -22,7 +21,7 @@ const baseHistory = [
     { campYear: '2022-23', totalRegistrations: 1230 },
     { campYear: '2023-24', totalRegistrations: 1637 },
     { campYear: '2024-25', totalRegistrations: 1397 },
-    { campYear: '2025-26', totalRegistrations: 1963 }, // Note: This will be overwritten by live data for the current year.
+    { campYear: '2025-26', totalRegistrations: 1963 },
 ];
 
 const locations = ['Pune', 'Rudrapur', 'Dharwad', 'Shegaon'];
