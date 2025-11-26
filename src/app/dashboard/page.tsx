@@ -10,7 +10,7 @@ import { Registration, BloodBank } from "@/lib/mock-data";
 import { RegistrationStatusChart, BloodGroupChart, AgencyChart } from '@/components/dashboard-charts';
 import { Button } from "@/components/ui/button";
 
-const YEAR = '2025-26';
+const YEAR = '2026-27';
 
 export default function Dashboard() {
     const router = useRouter();

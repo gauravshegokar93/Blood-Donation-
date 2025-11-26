@@ -170,7 +170,7 @@ export function YearlyTrendChart({ data }: { data: { [key: string]: number } }) 
   const sortedYears = Object.keys(data).sort((a, b) => a.localeCompare(b));
   const chartLabels = sortedYears;
   const chartValues = sortedYears.map(year => data[year]);
-  const currentYear = new Date().getFullYear().toString();
+  const currentYear = "2026";
 
   const chartData: ChartData<'bar'> = {
     labels: chartLabels,

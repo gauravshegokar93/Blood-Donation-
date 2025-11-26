@@ -34,7 +34,7 @@ ChartJS.register(
 
 
 const LOCATIONS = ['Pune', 'Rudrapur', 'Dharwad', 'Shegaon'];
-const CURRENT_YEAR = '2025';
+const CURRENT_YEAR = '2026';
 
 interface LocationStats {
     location: string;
@@ -271,7 +271,7 @@ export default function DirectorPage() {
 
             <main className="flex-grow p-4 md:p-8">
                  <section className="mb-12">
-                    <h2 className="text-3xl font-bold mb-6 text-center">BDC Status Report - All Locations (2025-26)</h2>
+                    <h2 className="text-3xl font-bold mb-6 text-center">BDC Status Report - All Locations (2026-27)</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
                         {reportData.map(item => (
                             <Card key={item.location} className="shadow-md hover:shadow-lg transition-shadow duration-300 border-l-4" style={{borderLeftColor: locationColors[item.location]?.base}}>

@@ -18,7 +18,7 @@ import html2canvas from 'html2canvas';
 const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'Other'];
 const genders = ['Male', 'Female', 'Other'];
 type SortKey = keyof Registration;
-const YEAR = '2025-26';
+const YEAR = '2026-27';
 
 function generateRegistrationId(location: string, existingRegistrations: Registration[]): string {
     const locationPrefix = location.substring(0, 3).toUpperCase();

@@ -2,7 +2,7 @@ export interface BloodBank {
     id: number;
     name: string;
     location: string;
-    year: string; // Always '2025-26'
+    year: string; // Always '2026-27'
     counter: number;
     quota: number;
 }
@@ -14,7 +14,7 @@ export interface Registration {
     mobile: string;
     agency: string;
     location: string;
-    year: string; // Always '2025-26'
+    year: string; // Always '2026-27'
     status: 'REGISTERED' | 'ACCEPTED' | 'REJECTED' | 'DONATED';
     rejectionReason?: string;
     rejectionDate?: string;
@@ -59,7 +59,7 @@ function generateRegistrationId(location: string, existing: Registration[]): str
 
 
 export function initializeMockData(location: string) {
-    const year = '2025-26';
+    const year = '2026-27';
     const initKey = `initialized_${location}_${year}`;
 
     if (!sessionStorage.getItem(initKey)) {

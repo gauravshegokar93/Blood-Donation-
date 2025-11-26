@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Registration } from '@/lib/mock-data';
 
-const YEAR = '2025-26';
+const YEAR = '2026-27';
 
 export default function AcceptancePage() {
     const router = useRouter();

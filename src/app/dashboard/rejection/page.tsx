@@ -20,7 +20,7 @@ const rejectionReasons = [
     "Other"
 ];
 
-const YEAR = '2025-26';
+const YEAR = '2026-27';
 
 export default function RejectionPage() {
     const router = useRouter();

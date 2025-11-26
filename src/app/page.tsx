@@ -10,7 +10,7 @@ import { initializeMockData } from '@/lib/mock-data';
 import Link from 'next/link';
 
 const locations = ['Rudrapur', 'Dharwad', 'Pune', 'Shegaon'];
-const year = '2025-26';
+const year = '2026-27';
 
 export default function SessionStartPage() {
   const router = useRouter();

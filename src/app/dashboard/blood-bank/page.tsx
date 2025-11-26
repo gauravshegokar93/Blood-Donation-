@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { PlusCircle, Edit, Trash2, Printer, Ban, X } from 'lucide-react';
 import { BloodBank } from '@/lib/mock-data';
 
-const YEAR = '2025-26';
+const YEAR = '2026-27';
 
 export default function BloodBankPage() {
   const router = useRouter();

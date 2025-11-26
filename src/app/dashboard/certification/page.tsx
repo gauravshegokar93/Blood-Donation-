@@ -12,7 +12,7 @@ import { Registration } from '@/lib/mock-data';
 import { Certificate } from '@/components/certificate';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 
-const YEAR = '2025-26';
+const YEAR = '2026-27';
 
 export default function CertificationPage() {
   const router = useRouter();
@@ -56,7 +56,7 @@ export default function CertificationPage() {
     if (!selectedRegistration || !location) return null;
     return {
       name: `${selectedRegistration.gender === 'Female' ? 'Ms.' : 'Mr.'} ${selectedRegistration.name}`,
-      date: 'April, 1st 2026', 
+      date: 'April, 1st 2027', 
       event: `Rotary Club of Pimpri, ${location}`
     };
   }, [selectedRegistration, location]);

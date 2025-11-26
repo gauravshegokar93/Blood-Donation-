@@ -17,7 +17,7 @@ import { Expand } from "lucide-react";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-const YEAR = '2025-26';
+const YEAR = '2026-27';
 
 interface ReportStats {
     total: number;
