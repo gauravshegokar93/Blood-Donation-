@@ -32,12 +32,8 @@ export const historicalData: HistoricalData[] = locations.flatMap(location =>
     baseHistory.map(historyItem => ({
         ...historyItem,
         location: location,
-        // To make the demo more interesting, we can slightly vary the data per location
-        totalRegistrations: Math.round(historyItem.totalRegistrations * (
-            location === 'Pune' ? 1
-            : location === 'Dharwad' ? 0.8
-            : location === 'Rudrapur' ? 0.6
-            : 0.5
-        ))
+        // The data is now taken as the total for ALL locations, so we divide by the number of locations
+        // to get a more realistic per-location number for the demo.
+        totalRegistrations: Math.round(historyItem.totalRegistrations / locations.length)
     }))
 );

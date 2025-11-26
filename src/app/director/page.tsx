@@ -34,7 +34,7 @@ ChartJS.register(
 
 
 const LOCATIONS = ['Pune', 'Rudrapur', 'Dharwad', 'Shegaon'];
-const CURRENT_YEAR = '2025-26';
+const CURRENT_YEAR = '2025';
 
 interface LocationStats {
     location: string;
@@ -47,7 +47,7 @@ interface LocationStats {
 interface YearlyTotal {
     year: string;
     total: number;
-    source: 'Historical' | 'Live' | 'Mixed';
+    source: 'Historical' | 'Live';
 }
 
 const locationColors: { [key: string]: { base: string, light: string, border: string } } = {
@@ -64,19 +64,8 @@ export default function DirectorPage() {
 
     useEffect(() => {
         const allStats: LocationStats[] = [];
-        const yearlyTotals: { [year: string]: { total: number, sources: Set<string> } } = {};
         
-        // Process historical data
-        historicalData.forEach(item => {
-            if (!yearlyTotals[item.campYear]) {
-                yearlyTotals[item.campYear] = { total: 0, sources: new Set() };
-            }
-            yearlyTotals[item.campYear].total += item.totalRegistrations;
-            yearlyTotals[item.campYear].sources.add('Historical');
-        });
-
-        // Process live data and overwrite the current year's total
-        let liveDataTotalForCurrentYear = 0;
+        // --- Process All Locations Status ---
         LOCATIONS.forEach(location => {
             const registrationKey = `registrations_${location}`;
             const campRegistrations: Registration[] = JSON.parse(sessionStorage.getItem(registrationKey) || '[]');
@@ -87,32 +76,41 @@ export default function DirectorPage() {
             const pending = campRegistrations.filter(r => r.status === 'REGISTERED').length;
             
             allStats.push({ location, total, accepted, rejected, pending });
-            liveDataTotalForCurrentYear += total;
+        });
+        setReportData(allStats);
+        
+        // --- Process Aggregated History ---
+        const yearlyTotals: { [year: string]: number } = {};
+
+        // Process historical data
+        historicalData.forEach(item => {
+            const year = item.campYear;
+            if (!yearlyTotals[year]) {
+                yearlyTotals[year] = 0;
+            }
+            // Since historical data is now per-location, we sum it up
+            yearlyTotals[year] += item.totalRegistrations * LOCATIONS.length;
         });
 
-        // Set the live data for the current year
-        if (!yearlyTotals[CURRENT_YEAR]) {
-             yearlyTotals[CURRENT_YEAR] = { total: 0, sources: new Set() };
-        }
-        yearlyTotals[CURRENT_YEAR].total = liveDataTotalForCurrentYear;
-        yearlyTotals[CURRENT_YEAR].sources.add('Live');
-
-        const combinedData: YearlyTotal[] = Object.entries(yearlyTotals).map(([year, data]) => {
-            let source: YearlyTotal['source'] = 'Historical';
-            if (data.sources.has('Live') && data.sources.has('Historical')) {
-                source = 'Mixed';
-            } else if (data.sources.has('Live')) {
-                source = 'Live';
-            }
-            return {
-                year,
-                total: data.total,
-                source,
-            };
+        // Process live data from all locations
+        let liveDataTotalForCurrentYear = 0;
+        LOCATIONS.forEach(location => {
+            const registrationKey = `registrations_${location}`;
+            const campRegistrations: Registration[] = JSON.parse(sessionStorage.getItem(registrationKey) || '[]');
+            liveDataTotalForCurrentYear += campRegistrations.length;
         });
         
+        // The mock-data `year` is '2025-26', we'll use '2025' to match historical data format
+        yearlyTotals[CURRENT_YEAR] = liveDataTotalForCurrentYear;
+
+
+        const combinedData: YearlyTotal[] = Object.entries(yearlyTotals).map(([year, total]) => ({
+            year,
+            total,
+            source: year === CURRENT_YEAR ? 'Live' : 'Historical',
+        }));
+        
         setAggregatedHistory(combinedData.sort((a, b) => a.year.localeCompare(b.year)));
-        setReportData(allStats);
 
     }, [router]);
 
@@ -234,7 +232,7 @@ export default function DirectorPage() {
     };
     
     const aggregatedChartData = {
-        labels: aggregatedHistory.map(d => d.year.split('-')[0]),
+        labels: aggregatedHistory.map(d => d.year),
         datasets: [{
             label: 'Total Registrations',
             data: aggregatedHistory.map(d => d.total)
@@ -266,7 +264,7 @@ export default function DirectorPage() {
 
             <main className="flex-grow p-4 md:p-8">
                  <section className="mb-12">
-                    <h2 className="text-3xl font-bold mb-6 text-center">BDC Status Report - All Locations ({CURRENT_YEAR})</h2>
+                    <h2 className="text-3xl font-bold mb-6 text-center">BDC Status Report - All Locations (2025-26)</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
                         {reportData.map(item => (
                             <Card key={item.location} className="shadow-md hover:shadow-lg transition-shadow duration-300 border-l-4" style={{borderLeftColor: locationColors[item.location]?.base}}>
@@ -291,14 +289,14 @@ export default function DirectorPage() {
                      <Card>
                         <CardHeader className="flex flex-row items-center justify-between">
                             <CardTitle className="text-center text-lg">All Locations - Registration Trend</CardTitle>
-                            <Button variant="ghost" size="icon" onClick={() => openChartInNewWindow('YearlyTrend', { data: Object.fromEntries(aggregatedHistory.map(item => [item.year.split('-')[0], item.total])) }, `Yearly Trend for All Locations`)}>
+                            <Button variant="ghost" size="icon" onClick={() => openChartInNewWindow('YearlyTrend', { data: Object.fromEntries(aggregatedHistory.map(item => [item.year, item.total])) }, `Yearly Trend for All Locations`)}>
                                 <Expand className="h-4 w-4" />
                             </Button>
                         </CardHeader>
                         <CardContent className="grid grid-cols-1 lg:grid-cols-5 gap-8">
                             <div className="lg:col-span-3">
                                 <h3 className="text-md font-semibold mb-2 text-center text-gray-600">Registration Trend Chart</h3>
-                                <YearlyTrendChart data={Object.fromEntries(aggregatedHistory.map(item => [item.year.split('-')[0], item.total]))} />
+                                <YearlyTrendChart data={Object.fromEntries(aggregatedHistory.map(item => [item.year, item.total]))} />
                             </div>
                             <div className="lg:col-span-2">
                                 <h3 className="text-md font-semibold mb-2 text-center text-gray-600">Historical Data Table</h3>
@@ -314,7 +312,7 @@ export default function DirectorPage() {
                                         <TableBody>
                                             {aggregatedHistory.map(item => (
                                                 <TableRow key={item.year}>
-                                                    <TableCell>{item.year.split('-')[0]}</TableCell>
+                                                    <TableCell>{item.year}</TableCell>
                                                     <TableCell className="text-right">{item.total.toLocaleString()}</TableCell>
                                                      <TableCell className="text-center">
                                                         <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
