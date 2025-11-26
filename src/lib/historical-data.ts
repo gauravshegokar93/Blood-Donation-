@@ -17,7 +17,7 @@ const baseHistory = [
     { campYear: '2017', totalRegistrations: 1018 },
     { campYear: '2018', totalRegistrations: 1213 },
     { campYear: '2019', totalRegistrations: 1600 },
-    { campYear: '2020', totalRegistrations: 0 }, // COVID year
+    { campYear: '2020', totalRegistrations: 0 },
     { campYear: '2021', totalRegistrations: 250 },
     { campYear: '2022', totalRegistrations: 1230 },
     { campYear: '2023', totalRegistrations: 1637 },
@@ -32,8 +32,9 @@ export const historicalData: HistoricalData[] = locations.flatMap(location =>
     baseHistory.map(historyItem => ({
         ...historyItem,
         location: location,
-        // The data is now taken as the total for ALL locations, so we divide by the number of locations
-        // to get a more realistic per-location number for the demo.
+        // The data is the total for ALL locations, so we divide by the number of locations
+        // to get a representative per-location number for the demo.
         totalRegistrations: Math.round(historyItem.totalRegistrations / locations.length)
     }))
 );
+
