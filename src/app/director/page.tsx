@@ -36,14 +36,6 @@ ChartJS.register(
 const LOCATIONS = ['Pune', 'Rudrapur', 'Dharwad', 'Shegaon'];
 const CURRENT_YEAR = '2025-26';
 
-interface YearlyData {
-    [year: string]: number;
-}
-
-interface AllYearlyData {
-    [location: string]: YearlyData;
-}
-
 interface LocationStats {
     location: string;
     total: number;
@@ -55,7 +47,7 @@ interface LocationStats {
 interface YearlyTotal {
     year: string;
     total: number;
-    source: 'Historical' | 'Live';
+    source: 'Historical' | 'Live' | 'Mixed';
 }
 
 const locationColors: { [key: string]: { base: string, light: string, border: string } } = {
@@ -67,26 +59,23 @@ const locationColors: { [key: string]: { base: string, light: string, border: st
 
 export default function DirectorPage() {
     const router = useRouter();
-    const [yearlyData, setYearlyData] = useState<AllYearlyData | null>(null);
     const [reportData, setReportData] = useState<LocationStats[]>([]);
-    const [historyReportData, setHistoryReportData] = useState<{[location: string]: YearlyTotal[]}>({});
+    const [aggregatedHistory, setAggregatedHistory] = useState<YearlyTotal[]>([]);
 
     useEffect(() => {
-        const allYearlyDataObject: AllYearlyData = {};
         const allStats: LocationStats[] = [];
-        const allHistory: {[location: string]: YearlyTotal[]} = {};
+        const yearlyTotals: { [year: string]: number } = {};
+        let liveDataTotal = 0;
 
+        // Process historical data
+        historicalData.forEach(item => {
+            if (item.campYear !== CURRENT_YEAR) {
+                yearlyTotals[item.campYear] = (yearlyTotals[item.campYear] || 0) + item.totalRegistrations;
+            }
+        });
+
+        // Process live and status data
         LOCATIONS.forEach(location => {
-            allYearlyDataObject[location] = {};
-
-            const locationHistory = historicalData
-                .filter(item => item.location === location)
-                .map(item => ({
-                    year: item.campYear,
-                    total: item.totalRegistrations,
-                    source: 'Historical' as const
-                }));
-
             const registrationKey = `registrations_${location}`;
             const campRegistrations: Registration[] = JSON.parse(sessionStorage.getItem(registrationKey) || '[]');
             
@@ -95,37 +84,21 @@ export default function DirectorPage() {
             const accepted = total - rejected;
             const pending = campRegistrations.filter(r => r.status === 'REGISTERED').length;
             
-            allYearlyDataObject[location][CURRENT_YEAR] = total;
-
-            const liveDataForCurrentYear = {
-                year: CURRENT_YEAR,
-                total: total,
-                source: 'Live' as const
-            };
-            
-            const combinedData = [...locationHistory];
-            const currentYearIndex = combinedData.findIndex(d => d.year === CURRENT_YEAR);
-
-            if (currentYearIndex > -1) {
-                combinedData[currentYearIndex] = liveDataForCurrentYear;
-            } else {
-                combinedData.push(liveDataForCurrentYear);
-            }
-            
-            allHistory[location] = combinedData.sort((a, b) => a.year.localeCompare(b.year));
             allStats.push({ location, total, accepted, rejected, pending });
-
-            historicalData.forEach(item => {
-                if (item.location === location) {
-                    allYearlyDataObject[location][item.campYear] = item.totalRegistrations;
-                }
-            });
-            allYearlyDataObject[location][CURRENT_YEAR] = total;
+            liveDataTotal += total;
         });
 
-        setYearlyData(allYearlyDataObject);
+        // Add live data for the current year
+        yearlyTotals[CURRENT_YEAR] = liveDataTotal;
+
+        const combinedData: YearlyTotal[] = Object.entries(yearlyTotals).map(([year, total]) => ({
+            year,
+            total,
+            source: year === CURRENT_YEAR ? 'Live' : 'Historical',
+        }));
+        
+        setAggregatedHistory(combinedData.sort((a, b) => a.year.localeCompare(b.year)));
         setReportData(allStats);
-        setHistoryReportData(allHistory);
 
     }, []);
 
@@ -146,7 +119,7 @@ export default function DirectorPage() {
         window.open('/chart', '_blank', 'width=1000,height=700');
     };
 
-    const getChartOptions = (location: string) => ({
+    const getStatusChartOptions = (location: string) => ({
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
@@ -190,7 +163,7 @@ export default function DirectorPage() {
         }
     });
 
-    const getChartData = (item: LocationStats) => {
+    const getStatusChartData = (item: LocationStats) => {
       const colors = {
         total:    locationColors[item.location] || { base: 'rgba(100,100,100,1)', light: 'rgba(150,150,150,1)', border: 'rgba(80,80,80,1)' },
         accepted: { base: 'rgba(34, 197, 94, 1)',   light: 'rgba(134, 239, 172, 1)', border: 'rgba(22, 163, 74, 1)' },
@@ -228,11 +201,11 @@ export default function DirectorPage() {
         const chartViewData = {
             chartType: 'Bar',
             chartData: {
-                data: getChartData(item),
+                data: getStatusChartData(item),
                 options: {
-                    ...getChartOptions(item.location),
+                    ...getStatusChartOptions(item.location),
                     plugins: {
-                        ...getChartOptions(item.location).plugins,
+                        ...getStatusChartOptions(item.location).plugins,
                         title: {
                             display: true,
                             text: `Registration Status for ${item.location}`,
@@ -245,9 +218,16 @@ export default function DirectorPage() {
         sessionStorage.setItem('chartViewData', JSON.stringify(chartViewData));
         window.open('/chart', '_blank', 'width=800,height=600');
     };
-
-
-    if (!yearlyData || reportData.length === 0) {
+    
+    const aggregatedChartData = {
+        labels: aggregatedHistory.map(d => d.year.split('-')[0]),
+        datasets: [{
+            label: 'Total Registrations',
+            data: aggregatedHistory.map(d => d.total)
+        }]
+    };
+    
+    if (reportData.length === 0) {
         return <div>Loading analytics...</div>;
     }
 
@@ -284,7 +264,7 @@ export default function DirectorPage() {
                                 </CardHeader>
                                 <CardContent>
                                     <div className="h-64 relative">
-                                        <Bar options={getChartOptions(item.location) as any} data={getChartData(item)} />
+                                        <Bar options={getStatusChartOptions(item.location) as any} data={getStatusChartData(item)} />
                                     </div>
                                 </CardContent>
                             </Card>
@@ -294,55 +274,51 @@ export default function DirectorPage() {
 
                 <section>
                     <h2 className="text-3xl font-bold mb-6 text-center">BDC History Report (2010-Present)</h2>
-                     <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-2">
-                        {LOCATIONS.map(location => (
-                             <Card key={location}>
-                                <CardHeader className="flex flex-row items-center justify-between">
-                                    <CardTitle className="text-center text-lg">{location}</CardTitle>
-                                    <Button variant="ghost" size="icon" onClick={() => openChartInNewWindow('YearlyTrend', { data: yearlyData[location] }, `Yearly Trend for ${location}`)}>
-                                        <Expand className="h-4 w-4" />
-                                    </Button>
-                                </CardHeader>
-                                <CardContent className="space-y-6">
-                                    <div>
-                                        <h3 className="text-md font-semibold mb-2 text-center text-gray-600">Registration Trend Chart</h3>
-                                        <YearlyTrendChart data={yearlyData[location]} />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-md font-semibold mb-2 text-center text-gray-600">Historical Data Table</h3>
-                                        <div className="border rounded-lg overflow-auto max-h-60">
-                                            <Table>
-                                                <TableHeader className="bg-gray-100">
-                                                    <TableRow>
-                                                        <TableHead className="font-bold">Year</TableHead>
-                                                        <TableHead className="font-bold text-right">Registrations</TableHead>
-                                                        <TableHead className="font-bold text-right">Source</TableHead>
-                                                    </TableRow>
-                                                </TableHeader>
-                                                <TableBody>
-                                                    {(historyReportData[location] || []).map(item => (
-                                                        <TableRow key={item.year}>
-                                                            <TableCell>{item.year}</TableCell>
-                                                            <TableCell className="text-right">{item.total}</TableCell>
-                                                             <TableCell className="text-right">
-                                                                <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
-                                                                    item.source === 'Live' 
-                                                                    ? 'bg-red-100 text-red-800' 
-                                                                    : 'bg-blue-100 text-blue-800'
-                                                                }`}>
-                                                                    {item.source}
-                                                                </span>
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    ))}
-                                                </TableBody>
-                                            </Table>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
+                     <Card>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <CardTitle className="text-center text-lg">All Locations - Registration Trend</CardTitle>
+                            <Button variant="ghost" size="icon" onClick={() => openChartInNewWindow('YearlyTrend', { data: Object.fromEntries(aggregatedHistory.map(item => [item.year, item.total])) }, `Yearly Trend for All Locations`)}>
+                                <Expand className="h-4 w-4" />
+                            </Button>
+                        </CardHeader>
+                        <CardContent className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                            <div className="lg:col-span-3">
+                                <h3 className="text-md font-semibold mb-2 text-center text-gray-600">Registration Trend Chart</h3>
+                                <YearlyTrendChart data={Object.fromEntries(aggregatedHistory.map(item => [item.year, item.total]))} />
+                            </div>
+                            <div className="lg:col-span-2">
+                                <h3 className="text-md font-semibold mb-2 text-center text-gray-600">Historical Data Table</h3>
+                                <div className="border rounded-lg overflow-auto max-h-96">
+                                    <Table>
+                                        <TableHeader className="bg-gray-100">
+                                            <TableRow>
+                                                <TableHead className="font-bold">Year</TableHead>
+                                                <TableHead className="font-bold text-right">Total Registrations</TableHead>
+                                                <TableHead className="font-bold text-right">Source</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {aggregatedHistory.map(item => (
+                                                <TableRow key={item.year}>
+                                                    <TableCell>{item.year}</TableCell>
+                                                    <TableCell className="text-right">{item.total.toLocaleString()}</TableCell>
+                                                     <TableCell className="text-right">
+                                                        <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
+                                                            item.source === 'Live' 
+                                                            ? 'bg-red-100 text-red-800' 
+                                                            : 'bg-blue-100 text-blue-800'
+                                                        }`}>
+                                                            {item.source}
+                                                        </span>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
                 </section>
             </main>
              <footer className="bg-gray-100 text-accent-foreground p-4 mt-8">
