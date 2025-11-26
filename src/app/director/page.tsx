@@ -298,7 +298,7 @@ export default function DirectorPage() {
                                         <TableBody>
                                             {aggregatedHistory.map(item => (
                                                 <TableRow key={item.year}>
-                                                    <TableCell>{item.year}</TableCell>
+                                                    <TableCell>{item.year.split('-')[0]}</TableCell>
                                                     <TableCell className="text-right">{item.total.toLocaleString()}</TableCell>
                                                      <TableCell className="text-center">
                                                         <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
