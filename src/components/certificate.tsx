@@ -1,5 +1,6 @@
 
 'use client';
+import Image from 'next/image';
 
 interface CertificateProps {
   name: string;
@@ -28,6 +29,11 @@ export function Certificate({ name, date, event }: CertificateProps) {
       <div className="absolute inset-[13mm] border-2 border-yellow-500"></div>
 
       <div className="relative z-10 w-full h-full flex flex-col items-center text-center px-12">
+        {/* Logo */}
+        <div className="absolute top-[20mm] left-[25mm]">
+          <Image src="/wadhokar-logo.png" alt="Wadhokar Group Logo" width={200} height={50} />
+        </div>
+
         {/* Header */}
         <div className="mt-20">
             <h1 className="text-6xl font-bold tracking-widest" style={{fontFamily: "'Playfair Display', serif"}}>
@@ -70,11 +76,6 @@ export function Certificate({ name, date, event }: CertificateProps) {
                 <p className="font-semibold">EVENT / PLACE</p>
                 <p>{event}</p>
            </div>
-        </div>
-        
-        {/* Footer Sponsor */}
-        <div className="absolute bottom-[20mm] text-center w-full">
-            <p className="text-xl font-bold text-gray-800">WADHOKAR GROUP OF COMPANIES</p>
         </div>
       </div>
     </div>
