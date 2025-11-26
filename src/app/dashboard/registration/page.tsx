@@ -179,8 +179,8 @@ export default function RegistrationPage() {
         const canvas = await html2canvas(cardElement, { scale: 4 });
         const imgData = canvas.toDataURL('image/png');
         
-        const cardWidthMM = 8.50;
-        const cardHeightMM = 10;
+        const cardWidthMM = 54;
+        const cardHeightMM = 85.6;
         
         const pdf = new jsPDF({
             orientation: 'portrait',
