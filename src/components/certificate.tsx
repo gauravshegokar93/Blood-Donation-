@@ -1,8 +1,6 @@
 
 'use client';
 
-import Image from 'next/image';
-
 interface CertificateProps {
   name: string;
   date: string;
@@ -15,59 +13,69 @@ export function Certificate({ name, date, event }: CertificateProps) {
       style={{
         width: '297mm',
         height: '210mm',
-        position: 'relative',
-        fontFamily: "'Times New Roman', Times, serif",
         background: 'white',
+        position: 'relative',
+        padding: '10mm',
+        boxSizing: 'border-box',
+        fontFamily: "'Times New Roman', Times, serif",
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
       }}
     >
-       <Image
-        src="/certificate-bg.png"
-        alt="Certificate Background"
-        layout="fill"
-        objectFit="contain"
-        quality={100}
-        priority
-      />
-      {/* Donor Name */}
-      <div
-        className="print-field"
-        style={{
-          top: '90mm',
-          left: '0mm',
-          right: '0mm',
-          textAlign: 'center',
-          fontSize: '48px',
-          fontFamily: "'Brush Script MT', 'Snell Roundhand', cursive",
-          color: '#333',
-        }}
-      >
-        {name}
-      </div>
+      {/* Borders */}
+      <div className="absolute inset-[10mm] border-4 border-red-700"></div>
+      <div className="absolute inset-[13mm] border-2 border-yellow-500"></div>
 
-       {/* Date */}
-      <div
-        className="print-field"
-        style={{
-          bottom: '50.5mm',
-          left: '32mm',
-          fontSize: '15px',
-          color: 'black',
-        }}
-      >
-        {date}
-      </div>
+      <div className="relative z-10 w-full h-full flex flex-col items-center text-center px-12">
+        {/* Header */}
+        <div className="mt-20">
+            <h1 className="text-6xl font-bold tracking-widest" style={{fontFamily: "'Playfair Display', serif"}}>
+                CERTIFICATE
+            </h1>
+            <h2 className="text-2xl mt-2 tracking-wider">OF APPRECIATION</h2>
+        </div>
 
-      {/* Event */}
-      <div
-        className="print-field"
-        style={{
-          bottom: '43.5mm',
-          left: '32mm',
-          fontSize: '15px',
-          color: 'black',
-        }}
-      >
-        {event}
+        {/* Presented to */}
+        <p className="mt-12 text-xl text-gray-700">This certificate is proudly presented to</p>
+
+        {/* Donor Name */}
+        <div className="mt-4 w-full">
+          <p className="text-6xl" style={{ fontFamily: "'Brush Script MT', 'Snell Roundhand', cursive", color: '#1E293B' }}>
+            {name}
+          </p>
+          <div className="w-3/4 h-px bg-gray-400 mx-auto mt-2"></div>
+        </div>
+
+        {/* Body Text */}
+        <p className="mt-8 text-lg max-w-2xl mx-auto leading-relaxed text-gray-600">
+          for voluntarily donating blood and supporting a noble cause to save lives.
+          Your contribution is a great asset to the society.
+        </p>
+
+        {/* Signature and Date Section */}
+        <div className="mt-auto mb-20 w-full grid grid-cols-3 items-end gap-8 text-sm">
+           <div className="flex flex-col items-center">
+                <div className="w-3/4 h-px bg-gray-500 mb-2"></div>
+                <p className="font-semibold">DATE</p>
+                <p>{date}</p>
+           </div>
+            <div className="flex flex-col items-center">
+                 {/* Placeholder for Rotary Logo */}
+                <div className="text-5xl text-yellow-500 mb-2">✺</div>
+                 <p className="font-bold text-red-700">ROTARY CLUB OF PIMPRI</p>
+            </div>
+           <div className="flex flex-col items-center">
+               <div className="w-3/4 h-px bg-gray-500 mb-2"></div>
+                <p className="font-semibold">EVENT / PLACE</p>
+                <p>{event}</p>
+           </div>
+        </div>
+        
+        {/* Footer Sponsor */}
+        <div className="absolute bottom-[20mm] text-center w-full">
+            <p className="text-xl font-bold text-gray-800">WADHOKAR GROUP OF COMPANIES</p>
+        </div>
       </div>
     </div>
   );
