@@ -170,18 +170,14 @@ export default function RegistrationPage() {
     };
 
     const handlePrint = async () => {
-        const cardElement = document.getElementById('print-card');
+        const cardElement = document.getElementById('print-card-container');
         if (!cardElement) {
             alert("Print card element not found. Please select a registration.");
             return;
         }
 
-        cardElement.style.display = 'block';
-
-        const canvas = await html2canvas(cardElement, { scale: 3 });
+        const canvas = await html2canvas(cardElement, { scale: 4 });
         
-        cardElement.style.display = 'none';
-
         const imgData = canvas.toDataURL('image/png');
 
         const cardWidthMM = 8.50;
@@ -226,7 +222,6 @@ export default function RegistrationPage() {
         return <div>Loading session...</div>;
     }
     const year = YEAR;
-    
     const selectedAgency = agencies.find(a => a.name === selectedRegistration?.agency);
 
     return (
@@ -318,7 +313,7 @@ export default function RegistrationPage() {
                                     <Select value={formState.gender} onValueChange={(value) => setFormState({...formState, gender: value as any})}>
                                         <SelectTrigger id="gender">
                                             <SelectValue placeholder="Select Gender" />
-                                        </SelectTrigger>
+                                        </Trigger>
                                         <SelectContent>
                                             {genders.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
                                         </SelectContent>
@@ -397,10 +392,12 @@ export default function RegistrationPage() {
                 </CardContent>
             </Card>
 
-            <div id="print-card-container" className="fixed -left-[9999px] top-0">
-                {selectedRegistration && (
-                    <PrintCard registration={selectedRegistration} agency={selectedAgency} />
-                )}
+            <div className="fixed -left-[9999px] top-0">
+                <div id="print-card-container">
+                    {selectedRegistration && (
+                        <PrintCard registration={selectedRegistration} agency={selectedAgency} />
+                    )}
+                </div>
             </div>
         </div>
     );
