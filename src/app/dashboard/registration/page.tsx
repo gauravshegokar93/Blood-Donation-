@@ -133,18 +133,17 @@ export default function RegistrationPage() {
         setFormState(initialNewRegState);
     };
 
-    const handleEdit = () => {
-        if (selectedRegistration) {
-            setIsEditing(true);
-            setFormState({
-                name: selectedRegistration.name,
-                bloodGroup: selectedRegistration.bloodGroup,
-                mobile: selectedRegistration.mobile,
-                agency: selectedRegistration.agency,
-                age: selectedRegistration.age,
-                gender: selectedRegistration.gender,
-            });
-        }
+    const handleSelectForEdit = (registration: Registration) => {
+        setSelectedRegistration(registration);
+        setIsEditing(true);
+        setFormState({
+            name: registration.name,
+            bloodGroup: registration.bloodGroup,
+            mobile: registration.mobile,
+            agency: registration.agency,
+            age: registration.age,
+            gender: registration.gender,
+        });
     };
     
     const handleDelete = () => {
@@ -156,6 +155,8 @@ export default function RegistrationPage() {
             
             setIsDeleteDialogOpen(false);
             setSelectedRegistration(null);
+            setIsEditing(false);
+            setFormState(initialNewRegState);
             loadDataForCamp(location);
         }
     };
@@ -205,7 +206,7 @@ export default function RegistrationPage() {
                     <div className="lg:col-span-2">
                          <div className="flex items-center space-x-1 md:space-x-2 mb-4 p-2 bg-gray-50 border rounded-md">
                             <Button size="sm" onClick={handleNew}><PlusCircle className="mr-1 h-4 w-4" /> New</Button>
-                            <Button size="sm" variant="outline" onClick={handleEdit} disabled={!selectedRegistration}><Edit className="mr-1 h-4 w-4" /> Edit</Button>
+                            <Button size="sm" variant="outline" onClick={() => selectedRegistration && handleSelectForEdit(selectedRegistration)} disabled={!selectedRegistration}><Edit className="mr-1 h-4 w-4" /> Edit</Button>
                             <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                                 <DialogTrigger asChild>
                                     <Button size="sm" variant="destructive" disabled={!selectedRegistration}><Trash2 className="mr-1 h-4 w-4" /> Delete</Button>
@@ -314,7 +315,7 @@ export default function RegistrationPage() {
                                     {sortedRegistrations.map(reg => (
                                         <TableRow 
                                             key={reg.id}
-                                            onClick={() => setSelectedRegistration(reg)}
+                                            onClick={() => handleSelectForEdit(reg)}
                                             className={selectedRegistration?.id === reg.id ? 'bg-blue-200' : 'cursor-pointer hover:bg-blue-100'}
                                         >
                                             <TableCell>{reg.id}</TableCell>
