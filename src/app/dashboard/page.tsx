@@ -21,7 +21,6 @@ export default function Dashboard() {
         totalRegistrations: 0,
         totalAccepted: 0,
         totalRejected: 0,
-        recent: [] as Registration[],
     });
 
     const [chartData, setChartData] = useState({
@@ -53,7 +52,6 @@ export default function Dashboard() {
                 totalRegistrations: campRegisteredCount,
                 totalAccepted: campAcceptedCount,
                 totalRejected: campRejectedCount,
-                recent: campRegistrations.slice(-5).reverse(),
             });
 
             // Prepare data for charts
@@ -168,13 +166,13 @@ export default function Dashboard() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent className="w-56 ml-2">
                                 <DropdownMenuItem asChild>
-                                    <Link href="/dashboard/reports/status-all">BDC Status - All</Link>
+                                    <Link href="/director" target="_blank">BDC Status - All</Link>
                                 </DropdownMenuItem>
                                  <DropdownMenuItem asChild>
                                     <Link href="/dashboard/reports/status-location">BDC Status - Location-wise</Link>
                                 </DropdownMenuItem>
                                  <DropdownMenuItem asChild>
-                                    <Link href="/dashboard/reports/history">BDC History</Link>
+                                    <Link href="/director" target="_blank">BDC History</Link>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -272,9 +270,9 @@ export default function Dashboard() {
                                 <CardTitle>Recent Registrations ({location}, {year})</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                {stats.recent.length > 0 ? (
+                                {stats.totalRegistrations > 0 ? (
                                     <ul className="space-y-2">
-                                        {stats.recent.map(reg => (
+                                        {campRegistrations.slice(-5).reverse().map(reg => (
                                             <li key={reg.id} className="flex justify-between items-center p-2 rounded-md bg-gray-50">
                                                 <div>
                                                     <p className="font-semibold">{reg.name} <span className="font-normal text-muted-foreground">({reg.bloodGroup})</span></p>
@@ -306,4 +304,15 @@ export default function Dashboard() {
           </footer>
         </div>
     );
+}
+
+// A helper to get camp registrations, useful for the recent registrations list.
+// Note: This is a simplified approach. In a real app, this logic might be in a shared hook or service.
+let campRegistrations: Registration[] = [];
+if (typeof window !== 'undefined') {
+    const savedLocation = sessionStorage.getItem('bdcLocation');
+    if (savedLocation) {
+        const registrationKey = `registrations_${savedLocation}`;
+        campRegistrations = JSON.parse(sessionStorage.getItem(registrationKey) || '[]');
+    }
 }
