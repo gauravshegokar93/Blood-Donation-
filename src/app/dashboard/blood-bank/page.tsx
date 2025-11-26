@@ -24,18 +24,10 @@ export default function BloodBankPage() {
   const initialFormState: Partial<Omit<BloodBank, 'id'>> = { name: '', location: '', counter: 0, quota: 0, year: YEAR };
   const [formState, setFormState] = useState<Partial<BloodBank>>(initialFormState);
 
-  const fetchBloodBanks = useCallback(async (loc: string) => {
-    try {
-      const response = await fetch(`/api/blood-banks?location=${loc}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch data');
-      }
-      const data: BloodBank[] = await response.json();
-      setBloodBanks(data);
-    } catch (error) {
-      console.error("Error fetching blood banks:", error);
-      alert("Could not load blood banks from the database.");
-    }
+  const loadBloodBanks = useCallback((loc: string) => {
+    const bloodBankKey = `bloodBanks_${loc}`;
+    const data: BloodBank[] = JSON.parse(sessionStorage.getItem(bloodBankKey) || '[]');
+    setBloodBanks(data);
   }, []);
 
   useEffect(() => {
@@ -44,10 +36,10 @@ export default function BloodBankPage() {
       router.push('/');
     } else {
       setLocation(savedLocation);
-      fetchBloodBanks(savedLocation);
+      loadBloodBanks(savedLocation);
       setFormState(prev => ({ ...prev, location: savedLocation, year: YEAR }));
     }
-  }, [router, fetchBloodBanks]);
+  }, [router, loadBloodBanks]);
   
   const handleNew = () => {
     if (!location) return;
@@ -65,18 +57,14 @@ export default function BloodBankPage() {
 
   const handleDelete = async () => {
     if (selectedBank && location) {
-        try {
-            const response = await fetch(`/api/blood-banks?id=${selectedBank.id}`, {
-                method: 'DELETE',
-            });
-            if (!response.ok) throw new Error('Failed to delete');
-            await fetchBloodBanks(location);
-            setIsDeleteDialogOpen(false);
-            setSelectedBank(null);
-        } catch (error) {
-            console.error("Error deleting bank:", error);
-            alert("Failed to delete blood bank.");
-        }
+        const bloodBankKey = `bloodBanks_${location}`;
+        const currentBanks: BloodBank[] = JSON.parse(sessionStorage.getItem(bloodBankKey) || '[]');
+        const updatedBanks = currentBanks.filter(b => b.id !== selectedBank.id);
+        sessionStorage.setItem(bloodBankKey, JSON.stringify(updatedBanks));
+        
+        loadBloodBanks(location);
+        setIsDeleteDialogOpen(false);
+        setSelectedBank(null);
     }
   };
   
@@ -89,23 +77,30 @@ export default function BloodBankPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!location) return;
+    if (!location || !formState.name) return;
 
-    try {
-      const response = await fetch('/api/blood-banks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formState, location, year: YEAR }),
-      });
-      if (!response.ok) throw new Error('Failed to save');
-      
-      await fetchBloodBanks(location);
-      handleCancel();
-
-    } catch (error) {
-      console.error("Error saving bank:", error);
-      alert("Failed to save blood bank.");
+    const bloodBankKey = `bloodBanks_${location}`;
+    const currentBanks: BloodBank[] = JSON.parse(sessionStorage.getItem(bloodBankKey) || '[]');
+    
+    if (formState.id) { // Editing existing bank
+        const updatedBanks = currentBanks.map(b => b.id === formState.id ? { ...b, ...formState } as BloodBank : b);
+        sessionStorage.setItem(bloodBankKey, JSON.stringify(updatedBanks));
+    } else { // Creating new bank
+        const newId = currentBanks.length > 0 ? Math.max(...currentBanks.map(b => b.id)) + 1 : 1;
+        const newBank: BloodBank = {
+            id: newId,
+            name: formState.name,
+            location: location,
+            year: YEAR,
+            counter: formState.counter || 0,
+            quota: formState.quota || 0,
+        };
+        const updatedBanks = [...currentBanks, newBank];
+        sessionStorage.setItem(bloodBankKey, JSON.stringify(updatedBanks));
     }
+
+    loadBloodBanks(location);
+    handleCancel();
   };
 
   const handleClose = () => {
@@ -134,7 +129,7 @@ export default function BloodBankPage() {
                 <DialogHeader>
                   <DialogTitle>Are you sure?</DialogTitle>
                   <DialogDescription>
-                    This will permanently delete the blood bank from the database: <span className="font-bold">{selectedBank?.name}</span>. This action cannot be undone.
+                    This will permanently delete the blood bank: <span className="font-bold">{selectedBank?.name}</span>. This action cannot be undone.
                   </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
