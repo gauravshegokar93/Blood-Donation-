@@ -30,7 +30,7 @@ export default function CertificationPage() {
       setLocation(savedLocation);
       const registrationKey = `registrations_${savedLocation}`;
       const registrations: Registration[] = JSON.parse(sessionStorage.getItem(registrationKey) || '[]');
-      const acceptedRegistrations = registrations.filter(r => r.status === 'ACCEPTED' || r.status === 'DONATED');
+      const acceptedRegistrations = registrations.filter(r => r.status === 'ACCEPTED');
       setAllRegistrations(acceptedRegistrations);
       setFilteredRegistrations(acceptedRegistrations);
     }
