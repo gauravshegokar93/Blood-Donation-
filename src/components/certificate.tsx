@@ -16,55 +16,55 @@ export function Certificate({ name, date, event }: CertificateProps) {
         width: '297mm',
         height: '210mm',
         position: 'relative',
-        fontFamily: 'sans-serif',
-        // This ensures the div itself isn't invisible
-        background: 'rgba(255, 255, 255, 0.01)',
+        fontFamily: "'Times New Roman', Times, serif",
+        background: 'white',
       }}
     >
        <Image
-        src="/White and Red Blood Donor Simple Certificate.png"
+        src="/certificate-bg.png"
         alt="Certificate Background"
         layout="fill"
-        objectFit="contain" // Use contain to ensure the whole image is visible
+        objectFit="contain"
         quality={100}
-        priority // Prioritize loading this image
+        priority
       />
+      {/* Donor Name */}
       <div
         className="print-field"
         style={{
-          top: '97mm',
+          top: '90mm',
           left: '0mm',
           right: '0mm',
           textAlign: 'center',
           fontSize: '48px',
-          fontFamily: "'Brush Script MT', cursive",
-          color: 'black',
-          position: 'absolute',
+          fontFamily: "'Brush Script MT', 'Snell Roundhand', cursive",
+          color: '#333',
         }}
       >
         {name}
       </div>
+
+       {/* Date */}
       <div
         className="print-field"
         style={{
-          bottom: '41mm',
+          bottom: '50.5mm',
           left: '32mm',
-          fontSize: '16px',
+          fontSize: '15px',
           color: 'black',
-          position: 'absolute',
-
         }}
       >
         {date}
       </div>
+
+      {/* Event */}
       <div
         className="print-field"
         style={{
-          bottom: '33mm',
+          bottom: '43.5mm',
           left: '32mm',
-          fontSize: '16px',
+          fontSize: '15px',
           color: 'black',
-          position: 'absolute',
         }}
       >
         {event}
