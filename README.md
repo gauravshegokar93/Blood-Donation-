@@ -260,60 +260,48 @@ The API is defined in `src/app/api/`.
 
 ---
 
-## 9. Future Enhancements
+## 9. SQL Migration: A Comprehensive Guide
 
-*   **Database Integration**: Fully migrate from `sessionStorage` to a persistent MS SQL Server database by implementing the logic in the existing API routes and `db.ts` file.
-*   **User Authentication**: Implement a proper authentication system (e.g., using NextAuth.js or Firebase Auth) to replace the current session-based login. This would allow for user roles (Admin, Director) and secure access.
-*   **Real-time Updates**: Integrate a real-time service like WebSockets or Firebase Realtime Database to push updates to all connected clients instantly, removing the need for the focus-based refresh hack.
-*   **Advanced Reporting**: Add more detailed reports, such as donor demographics, blood type availability trends, and camp performance comparisons. Allow for exporting reports to CSV or PDF.
-*   **Dockerization**: Create a `Dockerfile` to containerize the application for consistent deployments and easier setup.
-*   **Unit & Integration Testing**: Implement a testing suite using a framework like Jest and React Testing Library to ensure code quality and prevent regressions.
+This section documents the migration from a `sessionStorage`-based mock backend to a full Microsoft SQL Server backend.
 
----
+### 9.1 Overview of Changes
 
-## SQL Migration: Full File Path Change List
+The application has been refactored to replace all mock data and client-side `sessionStorage` logic with a persistent MS SQL Server database. This was achieved by:
+1.  Creating a robust SQL connection module (`src/lib/db.ts`).
+2.  Building SQL-backed API routes for `registrations` and `blood-banks`.
+3.  Creating API helper modules (`src/lib/api/*.ts`) to centralize `fetch` calls.
+4.  Refactoring all frontend components to use the API helpers instead of `sessionStorage`.
 
-This section provides a complete list of file changes required to migrate the application from a `sessionStorage`-based mock backend to a full Microsoft SQL Server backend.
+### 9.2 File Change Summary
 
-### File Change Table
+| File Path | Action | Purpose of Change |
+| :--- | :--- | :--- |
+| **Backend & API** | | |
+| `src/lib/db.ts` | **REPLACED** | Implemented a singleton, pooled, and parameterized SQL connection module. |
+| `src/app/api/registrations/route.ts`| **UPDATED** | Replaced all mock logic with `executeQuery` calls to the `Registrations` SQL table. |
+| `src/app/api/blood-banks/route.ts` | **UPDATED** | Replaced all mock logic with `executeQuery` calls to the `BloodBanks` SQL table. |
+| `src/lib/api/registrations.ts` | **NEW** | Created a frontend helper module for all registration-related API calls. |
+| `src/lib/api/blood-banks.ts` | **NEW** | Created a frontend helper module for all blood bank-related API calls. |
+| `src/lib/types.ts` | **NEW** | Centralized shared TypeScript interfaces (`Registration`, `BloodBank`, `HistoricalData`). |
+| `.env.example` | **NEW** | Added an example environment file for developers. |
+| **Frontend Components** | | |
+| `src/app/dashboard/page.tsx` | **UPDATED** | Replaced `sessionStorage` with API helpers to fetch dashboard data. |
+| `src/app/dashboard/registration/page.tsx`| **UPDATED** | Replaced all `sessionStorage` logic with API helper calls. |
+| `src/app/dashboard/blood-bank/page.tsx` | **UPDATED** | Replaced all `sessionStorage` logic with API helper calls. |
+| `src/app/dashboard/acceptance/page.tsx`| **UPDATED** | Replaced `sessionStorage` with API helpers to update registration status. |
+| `src/app/dashboard/rejection/page.tsx` | **UPDATED** | Replaced `sessionStorage` with API helpers to update registration status. |
+| `src/app/dashboard/certification/page.tsx`| **UPDATED** | Replaced `sessionStorage` with API helpers to search for donors. |
+| `src/app/director/page.tsx` | **UPDATED** | Replaced `sessionStorage` with API calls to fetch live data for all locations. |
+| `src/app/dashboard/reports/status-location/page.tsx` | **UPDATED** | Replaced `sessionStorage` with API calls to fetch location-specific data. |
+| `src/app/page.tsx` | **UPDATED** | Removed calls to mock data initializers. |
+| `src/lib/historical-data.ts` | **UPDATED** | Removed `Registration` and `BloodBank` types (moved to `src/lib/types.ts`). |
 
-| File Path | Action | Purpose of Change | Instructions |
-| :--- | :--- | :--- | :--- |
-| **Backend & API** | | | |
-| `src/app/api/registrations/route.ts`| **UPDATE** | Connect existing API route to the SQL database. | Replace mock logic with `executeQuery` calls to the `Registrations` SQL table for all CRUD ops. |
-| `src/app/api/blood-banks/route.ts` | **UPDATE** | Connect existing API route to the SQL database. | Replace mock logic with `executeQuery` calls to the `BloodBanks` SQL table. |
-| `src/lib/db.ts` | **UPDATE** | Configure SQL Server connection details. | Add your database server, user, password, and database name to the config. |
-| **Frontend Components** | | | |
-| `src/app/dashboard/page.tsx` | **UPDATE** | Replace `sessionStorage` with API calls. | Refactor `loadDashboardData` to `fetch` from `/api/registrations` and `/api/blood-banks`. |
-| `src/app/dashboard/registration/page.tsx`| **UPDATE** | Replace all `sessionStorage` logic with API calls. | Change `loadDataForCamp`, `handleSaveRegistration`, and `handleDelete` to use `fetch`. |
-| `src/app/dashboard/blood-bank/page.tsx` | **UPDATE** | Replace all `sessionStorage` logic with API calls. | Change `loadBloodBanks`, `handleSave`, and `handleDelete` to use `fetch`. |
-| `src/app/dashboard/acceptance/page.tsx`| **UPDATE** | Replace `sessionStorage` with an API call. | Change `handleAccept` to make a POST request to `/api/registrations` to update the status. |
-| `src/app/dashboard/rejection/page.tsx` | **UPDATE** | Replace `sessionStorage` with an API call. | Change `handleReject` to make a POST request to `/api/registrations` to update the status. |
-| `src/app/dashboard/certification/page.tsx`| **UPDATE** | Replace `sessionStorage` with an API call. | Fetch donor data from `/api/registrations` for searching and printing. |
-| `src/app/director/page.tsx` | **UPDATE** | Replace `sessionStorage` with API calls. | Fetch live data for all locations by making multiple calls to the backend APIs. |
-| `src/app/page.tsx` | **UPDATE** | Remove mock data initialization. | The `handleStart` function should no longer call mock data initializers. |
-| `src/app/chart/page.tsx` | **UPDATE** | Remove dependency on `sessionStorage` for chart data transfer. | Keep using `sessionStorage` for now as it's a simple way to pass data to a new window. |
-| `src/app/dashboard/reports/status-location/page.tsx` | **UPDATE** | Replace `sessionStorage` with API calls. | Fetch live data for the selected location by making a call to the backend API. |
 
+### 9.3 Migration Guide
 
-### Migration Guide
-
-**Step 1: Apply Backend File Changes**
-
-1.  **Update API Route:** Modify `src/app/api/registrations/route.ts` to handle registration data from the SQL database.
-2.  **Update API Route:** Modify `src/app/api/blood-banks/route.ts` to fetch data from the `BloodBanks` table in your SQL database.
-3.  **Configure Database:** Update the connection details in `src/lib/db.ts` to point to your SQL Server instance.
-
-**Step 2: Update Frontend Components**
-
-1.  **Refactor Pages:** Go through each file listed in the table under "Frontend Components" (`dashboard/page.tsx`, `registration/page.tsx`, etc.).
-2.  **Remove `sessionStorage` (where applicable):** Delete code that reads from or writes to `sessionStorage` for application data. Keep it for session management (`bdcLocation`).
-3.  **Implement `fetch`:** Replace the deleted data logic with `fetch` calls to your new API routes (`/api/registrations`, `/api/blood-banks`). Use `useState` and `useEffect` to manage the data received from the API.
-
-**Step 3: Update Environment Variables**
-
-1.  **Create `.env.local`:** If it doesn't exist, create a `.env.local` file in the root of your project.
-2.  **Add Credentials:** Add your SQL Server connection details to this file:
+#### Step 1: Set Up Environment Variables
+1.  Create a `.env.local` file in the root of the project (or rename `.env` if it exists).
+2.  Add your SQL Server connection details to this file, using `.env.example` as a reference:
     ```
     DB_SERVER=your_server_address
     DB_USER=your_username
@@ -322,17 +310,71 @@ This section provides a complete list of file changes required to migrate the ap
     DB_OPTIONS_TRUSTSERVERCERTIFICATE=true
     ```
 
-**Step 4: Test SQL Connectivity**
-
+#### Step 2: Test SQL Connectivity
 1.  Run the application (`npm run dev`).
-2.  Navigate to a page that fetches data, like the Blood Bank management screen.
-3.  Verify that the data displayed is coming directly from your SQL database. Check the terminal for any connection error messages from `src/lib/db.ts`.
+2.  Navigate to a page that fetches data, like the **Blood Bank Management** screen (`/dashboard/blood-bank`).
+3.  Verify that the data displayed is coming from your SQL database. Check the terminal where `npm run dev` is running for a "Connected to SQL Server" message or any connection error messages from `src/lib/db.ts`.
 
-**Step 5: Verify All Routes**
+#### Step 3: Test API Endpoints with cURL (Optional)
+You can test the API endpoints directly using `curl` to ensure the backend is working as expected.
 
-1.  **Test CRUD Operations:** Systematically test every feature:
-    *   Create, edit, and delete a blood bank.
-    *   Create, edit, and delete a donor registration.
-    *   Accept and reject a donor.
-    *   Generate a certificate.
-2.  **Check Dashboards:** Ensure both the Admin and Director dashboards display the correct aggregated data from the SQL backend.
+*   **Get all registrations for Pune:**
+    ```bash
+    curl -X GET http://localhost:3000/api/registrations?location=Pune
+    ```
+*   **Create a new registration:**
+    ```bash
+    curl -X POST http://localhost:3000/api/registrations \
+    -H "Content-Type: application/json" \
+    -d '{ "name": "John Doe", "bloodGroup": "O+", "mobile": "1234567890", "agency": "AFMC BLOOD BANK", "location": "Pune", "year": "2026-27", "age": 30, "gender": "Male" }'
+    ```
+*   **Update a registration's status (e.g., to 'ACCEPTED'):**
+    ```bash
+    curl -X POST http://localhost:3000/api/registrations \
+    -H "Content-Type: application/json" \
+    -d '{ "id": "PUN-0001", "status": "ACCEPTED", "location": "Pune", "year": "2026-27" }'
+    ```
+*   **Delete a registration:**
+    ```bash
+    curl -X DELETE http://localhost:3000/api/registrations?id=PUN-0001
+    ```
+
+#### Step 4: Full Manual Test Plan
+Systematically test every feature in the user interface to confirm the migration was successful.
+
+1.  **Login (`/`)**:
+    *   [ ] Select a location (e.g., 'Pune') and click 'Start'.
+    *   [ ] Verify you are redirected to `/dashboard`.
+2.  **Admin Dashboard (`/dashboard`)**:
+    *   [ ] Verify that the stats (Total Registrations, Accepted, Rejected) match the data in your database for the selected location.
+    *   [ ] Verify the charts (Registration Status, Blood Group, Agency) display correct data.
+    *   [ ] Verify the "Recent Registrations" list is accurate.
+3.  **Blood Bank Management (`/dashboard/blood-bank`)**:
+    *   [ ] **Create**: Click 'New', fill in the form, and save. Verify the new bank appears in the table and in the database.
+    *   [ ] **Update**: Select a bank, click 'Edit', change a value (e.g., Quota), and save. Verify the change is reflected in the table and database.
+    *   [ ] **Delete**: Select a bank, click 'Delete', and confirm. Verify the bank is removed from the table and database.
+4.  **Registration (`/dashboard/registration`)**:
+    *   [ ] **Create**: Click 'New', fill out the form, and save. Verify the new donor appears in the list and in the database.
+    *   [ ] **Update**: Select a donor, click 'Edit', change a field (e.g., mobile number), and save. Verify the update.
+    *   [ ] **Delete**: Select a donor, click 'Delete', and confirm. Verify they are removed.
+    *   [ ] **Print Card**: Select a donor and click 'Print'. Verify the print preview opens with the correct ID card.
+5.  **Acceptance/Rejection**:
+    *   [ ] Go to **Acceptance** (`/dashboard/acceptance`), enter a valid `REGISTERED` ID, and click 'Accept'. Verify the success message and check the database `status` column.
+    *   [ ] Go to **Rejection** (`/dashboard/rejection`), enter a valid ID, select a reason, and click 'Reject'. Verify the donor appears in the rejected list below and check the database.
+6.  **Certification (`/dashboard/certification`)**:
+    *   [ ] Search for a donor by name or ID.
+    *   [ ] Verify that only non-rejected donors appear.
+    *   [ ] Click 'Preview' and 'Print' to ensure the certificate generates with the correct data.
+7.  **Director's Dashboard (`/director`)**:
+    *   [ ] Verify the "BDC Status Report" shows correct aggregated bars for each location.
+    *   [ ] Verify the "BDC History Report" shows the trend chart, with the current year's data correctly marked as 'Live'.
+
+---
+
+## 10. Future Enhancements
+
+*   **User Authentication**: Implement a proper authentication system (e.g., using NextAuth.js or Firebase Auth) to replace the current session-based login. This would allow for user roles (Admin, Director) and secure access.
+*   **Real-time Updates**: Integrate a real-time service like WebSockets or Firebase Realtime Database to push updates to all connected clients instantly, removing the need for the focus-based refresh hack.
+*   **Advanced Reporting**: Add more detailed reports, such as donor demographics, blood type availability trends, and camp performance comparisons. Allow for exporting reports to CSV or PDF.
+*   **Dockerization**: Create a `Dockerfile` to containerize the application for consistent deployments and easier setup.
+*   **Unit & Integration Testing**: Implement a testing suite using a framework like Jest and React Testing Library to ensure code quality and prevent regressions.
