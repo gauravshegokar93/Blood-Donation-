@@ -15,6 +15,8 @@ import { Registration, BloodBank } from '@/lib/types';
 import { PrintCard } from '@/components/print-card';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { fetchRegistrations, saveRegistration, deleteRegistration } from '@/lib/api/registrations';
+import { fetchBloodBanks } from '@/lib/api/blood-banks';
 
 const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'Other'];
 const genders = ['Male', 'Female', 'Other'];
@@ -46,16 +48,11 @@ export default function RegistrationPage() {
     const loadDataForCamp = useCallback(async (loc: string) => {
         setIsLoading(true);
         try {
-            const [regResponse, bankResponse] = await Promise.all([
-                fetch(`/api/registrations?location=${loc}`),
-                fetch(`/api/blood-banks?location=${loc}`)
+            const [campRegistrations, campAgencies] = await Promise.all([
+                fetchRegistrations(loc),
+                fetchBloodBanks(loc)
             ]);
-
-            if (!regResponse.ok || !bankResponse.ok) throw new Error('Failed to load data');
             
-            const campRegistrations: Registration[] = await regResponse.json();
-            const campAgencies: BloodBank[] = await bankResponse.json();
-
             setRegistrations(campRegistrations);
             
             // Generate next ID based on fetched data
@@ -108,7 +105,7 @@ export default function RegistrationPage() {
         }
         
         setIsSubmitting(true);
-        const body = {
+        const body: Partial<Registration> = {
             ...formState,
             location,
             year: YEAR,
@@ -116,17 +113,7 @@ export default function RegistrationPage() {
         };
 
         try {
-            const response = await fetch('/api/registrations', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to save registration');
-            }
-
+            await saveRegistration(body);
             handleCancel();
             await loadDataForCamp(location);
 
@@ -170,17 +157,13 @@ export default function RegistrationPage() {
     const handleDelete = async () => {
         if (selectedRegistration && location) {
             try {
-                const response = await fetch(`/api/registrations?id=${selectedRegistration.id}`, {
-                    method: 'DELETE',
-                });
-                if (!response.ok) throw new Error('Failed to delete');
-
+                await deleteRegistration(selectedRegistration.id);
                 setIsDeleteDialogOpen(false);
                 handleCancel();
                 await loadDataForCamp(location);
-            } catch (error) {
+            } catch (error: any) {
                 console.error(error);
-                alert('Failed to delete registration.');
+                alert(`Error: ${error.message}`);
             }
         }
     };

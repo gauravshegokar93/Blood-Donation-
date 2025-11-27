@@ -15,6 +15,7 @@ import {
 import type { Registration } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Expand } from "lucide-react";
+import { fetchRegistrations } from "@/lib/api/registrations";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -37,9 +38,7 @@ export default function BDC_StatusLocationPage() {
     const loadReportData = useCallback(async (loc: string) => {
         setIsLoading(true);
         try {
-            const response = await fetch(`/api/registrations?location=${loc}`);
-            if (!response.ok) throw new Error('Failed to load data');
-            const campRegistrations: Registration[] = await response.json();
+            const campRegistrations = await fetchRegistrations(loc);
             
             setRegistrations(campRegistrations);
 
@@ -49,9 +48,9 @@ export default function BDC_StatusLocationPage() {
             const pending = campRegistrations.filter(r => r.status === 'REGISTERED').length;
             setStats({ total, accepted, rejected, pending });
 
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            alert('Failed to load report data.');
+            alert(`Failed to load report data: ${error.message}`);
         } finally {
             setIsLoading(false);
         }

@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Registration } from '@/lib/types';
+import { fetchRegistrationById, saveRegistration } from '@/lib/api/registrations';
 
 const YEAR = '2026-27';
 
@@ -38,19 +39,7 @@ export default function AcceptancePage() {
 
         try {
             // First, get the registration to check its status
-            const getRes = await fetch(`/api/registrations?id=${regId}`);
-            
-            if (!getRes.ok) {
-                if (getRes.status === 404) {
-                    alert(`Registration ID "${regId}" not found.`);
-                } else {
-                    alert('Failed to fetch registration details. Please try again.');
-                }
-                setIsLoading(false);
-                return;
-            }
-
-            const registration: Registration = await getRes.json();
+            const registration = await fetchRegistrationById(regId);
 
             if (registration.status === 'REJECTED') {
                 alert(`Registration ID "${regId}" has been rejected and cannot be accepted.`);
@@ -65,26 +54,18 @@ export default function AcceptancePage() {
             }
 
             // If status is REGISTERED, proceed to accept
-            const updateRes = await fetch('/api/registrations', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    id: regId,
-                    status: 'ACCEPTED',
-                    location: location, // Include location and year for context if needed by API
-                    year: YEAR,
-                })
+            await saveRegistration({
+                id: regId,
+                status: 'ACCEPTED',
+                location: location,
+                year: YEAR,
             });
-
-            if (!updateRes.ok) {
-                 throw new Error('Failed to update registration status');
-            }
             
             alert(`Registration ID "${regId}" has been accepted. The dashboard statistics will be updated.`);
             setRegistrationId(''); // Reset input
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error accepting registration:', error);
-            alert('An error occurred. Please try again.');
+            alert(error.message || 'An error occurred. Please try again.');
         } finally {
             setIsLoading(false);
         }

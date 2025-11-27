@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { PlusCircle, Edit, Trash2, Printer, Ban, X } from 'lucide-react';
 import { BloodBank } from '@/lib/types';
+import { fetchBloodBanks, saveBloodBank, deleteBloodBank } from '@/lib/api/blood-banks';
 
 const YEAR = '2026-27';
 
@@ -29,13 +30,11 @@ export default function BloodBankPage() {
   const loadBloodBanks = useCallback(async (loc: string) => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/blood-banks?location=${loc}`);
-      if (!response.ok) throw new Error('Failed to fetch blood banks');
-      const data: BloodBank[] = await response.json();
+      const data = await fetchBloodBanks(loc);
       setBloodBanks(data);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      alert('Could not load blood banks.');
+      alert(`Could not load blood banks: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -69,17 +68,13 @@ export default function BloodBankPage() {
   const handleDelete = async () => {
     if (selectedBank && location) {
         try {
-            const response = await fetch(`/api/blood-banks?id=${selectedBank.id}`, {
-                method: 'DELETE',
-            });
-            if (!response.ok) throw new Error('Failed to delete blood bank');
-
+            await deleteBloodBank(selectedBank.id);
             await loadBloodBanks(location);
             setIsDeleteDialogOpen(false);
             setSelectedBank(null);
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            alert('Failed to delete blood bank.');
+            alert(`Failed to delete blood bank: ${error.message}`);
         }
     }
   };
@@ -96,18 +91,12 @@ export default function BloodBankPage() {
     if (!location || !formState.name) return;
 
     try {
-        const response = await fetch('/api/blood-banks', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(formState),
-        });
-        if (!response.ok) throw new Error('Failed to save blood bank');
-
+        await saveBloodBank(formState);
         await loadBloodBanks(location);
         handleCancel();
-    } catch (error) {
+    } catch (error: any) {
         console.error(error);
-        alert('Failed to save blood bank.');
+        alert(`Failed to save blood bank: ${error.message}`);
     }
   };
 

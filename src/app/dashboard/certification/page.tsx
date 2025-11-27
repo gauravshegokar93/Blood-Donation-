@@ -11,6 +11,7 @@ import { Printer, Eye } from 'lucide-react';
 import { Registration } from '@/lib/types';
 import { Certificate } from '@/components/certificate';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
+import { fetchRegistrations } from '@/lib/api/registrations';
 
 const YEAR = '2026-27';
 
@@ -26,15 +27,13 @@ export default function CertificationPage() {
   const loadRegistrations = useCallback(async (loc: string) => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/registrations?location=${loc}`);
-      if (!response.ok) throw new Error('Failed to fetch registrations');
-      const data: Registration[] = await response.json();
+      const data = await fetchRegistrations(loc);
       const nonRejected = data.filter(r => r.status !== 'REJECTED');
       setAllRegistrations(nonRejected);
       setFilteredRegistrations(nonRejected);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      alert('Could not load registrations.');
+      alert(`Could not load registrations: ${error.message}`);
     } finally {
       setIsLoading(false);
     }

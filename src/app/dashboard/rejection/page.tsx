@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Registration } from '@/lib/types';
+import { fetchRegistrations, saveRegistration } from '@/lib/api/registrations';
 
 const rejectionReasons = [
     "Low Hemoglobin",
@@ -40,10 +41,7 @@ export default function RejectionPage() {
     const loadData = useCallback(async (loc: string) => {
         setIsLoading(true);
         try {
-            const response = await fetch(`/api/registrations?location=${loc}`);
-            if (!response.ok) throw new Error('Failed to fetch data');
-            const currentRegistrations: Registration[] = await response.json();
-            
+            const currentRegistrations = await fetchRegistrations(loc);
             setAllCampRegistrations(currentRegistrations);
 
             const campRejectedDonors = currentRegistrations.filter(r => r.status === 'REJECTED');
@@ -103,19 +101,13 @@ export default function RejectionPage() {
         
         setIsSubmitting(true);
         try {
-            const response = await fetch('/api/registrations', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    id: regId,
-                    status: 'REJECTED',
-                    rejectionReason: reason,
-                    location,
-                    year: YEAR,
-                })
+            await saveRegistration({
+                id: regId,
+                status: 'REJECTED',
+                rejectionReason: reason,
+                location,
+                year: YEAR,
             });
-
-            if (!response.ok) throw new Error('Failed to reject registration');
 
             alert(`Registration ID "${registrationId}" has been rejected. Reason: ${reason}.`);
             
@@ -124,9 +116,9 @@ export default function RejectionPage() {
             setReason('');
             await loadData(location);
 
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            alert('An error occurred while rejecting the donor.');
+            alert(`An error occurred while rejecting the donor: ${error.message}`);
         } finally {
             setIsSubmitting(false);
         }

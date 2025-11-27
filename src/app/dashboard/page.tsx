@@ -10,6 +10,9 @@ import Link from "next/link";
 import { Registration, BloodBank } from "@/lib/types";
 import { RegistrationStatusChart, BloodGroupChart, AgencyChart } from '@/components/dashboard-charts';
 import { Button } from "@/components/ui/button";
+import { fetchRegistrations } from "@/lib/api/registrations";
+import { fetchBloodBanks } from "@/lib/api/blood-banks";
+
 
 const YEAR = '2026-27';
 
@@ -34,17 +37,11 @@ export default function Dashboard() {
 
     const loadDashboardData = useCallback(async (currentLocation: string) => {
         try {
-            const [regResponse, bankResponse] = await Promise.all([
-                fetch(`/api/registrations?location=${currentLocation}`),
-                fetch(`/api/blood-banks?location=${currentLocation}`),
+            const [campRegistrations, campBloodBanks] = await Promise.all([
+                fetchRegistrations(currentLocation),
+                fetchBloodBanks(currentLocation),
             ]);
 
-            if (!regResponse.ok || !bankResponse.ok) {
-                throw new Error('Failed to fetch dashboard data');
-            }
-
-            const campRegistrations: Registration[] = await regResponse.json();
-            const campBloodBanks: BloodBank[] = await bankResponse.json();
 
             const campRegisteredCount = campRegistrations.length;
             const campRejectedCount = campRegistrations.filter(r => r.status === 'REJECTED').length;

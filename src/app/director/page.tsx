@@ -22,6 +22,7 @@ import {
   Legend
 } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
+import { fetchRegistrations } from '@/lib/api/registrations';
 
 ChartJS.register(
   CategoryScale,
@@ -70,19 +71,19 @@ export default function DirectorPage() {
         try {
             // --- Process All Locations Status for the current year ---
             const locationPromises = LOCATIONS.map(async (location) => {
-                const response = await fetch(`/api/registrations?location=${location}`);
-                if (!response.ok) {
-                    console.error(`Failed to fetch data for ${location}`);
+                try {
+                    const campRegistrations = await fetchRegistrations(location);
+                    
+                    const total = campRegistrations.length;
+                    const rejected = campRegistrations.filter(r => r.status === 'REJECTED').length;
+                    const accepted = campRegistrations.filter(r => r.status === 'ACCEPTED').length;
+                    const pending = total - rejected - accepted;
+                    
+                    return { location, total, accepted, rejected, pending };
+                } catch (error) {
+                     console.error(`Failed to fetch data for ${location}`);
                     return { location, total: 0, accepted: 0, rejected: 0, pending: 0 };
                 }
-                const campRegistrations: Registration[] = await response.json();
-                
-                const total = campRegistrations.length;
-                const rejected = campRegistrations.filter(r => r.status === 'REJECTED').length;
-                const accepted = campRegistrations.filter(r => r.status === 'ACCEPTED').length;
-                const pending = total - rejected - accepted;
-                
-                return { location, total, accepted, rejected, pending };
             });
 
             const allStats = await Promise.all(locationPromises);
