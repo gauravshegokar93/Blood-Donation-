@@ -6,7 +6,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Droplets } from 'lucide-react';
-import { initializeMockData } from '@/lib/mock-data';
 import Link from 'next/link';
 
 const locations = ['Rudrapur', 'Dharwad', 'Pune', 'Shegaon'];
@@ -15,12 +14,13 @@ const year = '2026-27';
 export default function SessionStartPage() {
   const router = useRouter();
   const [location, setLocation] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleStart = () => {
     if (location && year) {
+      setIsLoading(true);
       sessionStorage.setItem('bdcLocation', location);
       sessionStorage.setItem('bdcYear', year);
-      initializeMockData(location);
       router.push('/dashboard');
     } else {
       alert('Please select a location.');
@@ -77,8 +77,8 @@ export default function SessionStartPage() {
                     className="flex h-10 w-full rounded-md border border-input bg-gray-100 px-3 py-2 text-sm ring-offset-background"
                  />
               </div>
-              <Button onClick={handleStart} className="w-full bg-primary hover:bg-red-700">
-                Start
+              <Button onClick={handleStart} className="w-full bg-primary hover:bg-red-700" disabled={isLoading}>
+                {isLoading ? 'Loading...' : 'Start'}
               </Button>
             </div>
           </CardContent>

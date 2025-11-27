@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/db';
-import type { BloodBank } from '@/lib/mock-data';
+import type { BloodBank } from '@/lib/types';
 
 // GET all blood banks for a specific location
 export async function GET(request: Request) {

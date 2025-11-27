@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Droplets, LogOut, Expand } from 'lucide-react';
-import { Registration } from '@/lib/mock-data';
-import { historicalData } from '@/lib/historical-data';
+import { Registration } from '@/lib/types';
+import { historicalData as staticHistoricalData, HistoricalData } from '@/lib/historical-data';
 import { YearlyTrendChart } from '@/components/director-charts';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -35,6 +35,7 @@ ChartJS.register(
 
 const LOCATIONS = ['Pune', 'Rudrapur', 'Dharwad', 'Shegaon'];
 const CURRENT_YEAR = '2026';
+const CURRENT_YEAR_FULL = '2026-27';
 
 interface LocationStats {
     location: string;
@@ -61,65 +62,61 @@ export default function DirectorPage() {
     const router = useRouter();
     const [reportData, setReportData] = useState<LocationStats[]>([]);
     const [aggregatedHistory, setAggregatedHistory] = useState<YearlyTotal[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    const loadDirectorData = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            // --- Process All Locations Status for the current year ---
+            const locationPromises = LOCATIONS.map(async (location) => {
+                const response = await fetch(`/api/registrations?location=${location}`);
+                if (!response.ok) {
+                    console.error(`Failed to fetch data for ${location}`);
+                    return { location, total: 0, accepted: 0, rejected: 0, pending: 0 };
+                }
+                const campRegistrations: Registration[] = await response.json();
+                
+                const total = campRegistrations.length;
+                const rejected = campRegistrations.filter(r => r.status === 'REJECTED').length;
+                const accepted = campRegistrations.filter(r => r.status === 'ACCEPTED').length;
+                const pending = total - rejected - accepted;
+                
+                return { location, total, accepted, rejected, pending };
+            });
+
+            const allStats = await Promise.all(locationPromises);
+            setReportData(allStats);
+            
+            // --- Process Aggregated History ---
+            const liveDataTotalForCurrentYear = allStats.reduce((sum, loc) => sum + loc.total, 0);
+
+            const yearlyTotals: { [year: string]: number } = {};
+            staticHistoricalData.forEach(item => {
+                yearlyTotals[item.campYear] = item.totalRegistrations;
+            });
+            
+            // Overwrite historical value for the current year with live data
+            yearlyTotals[CURRENT_YEAR] = liveDataTotalForCurrentYear;
+
+            const combinedData: YearlyTotal[] = Object.entries(yearlyTotals).map(([year, total]) => ({
+                year,
+                total,
+                source: year === CURRENT_YEAR ? 'Live' : 'Historical',
+            }));
+            
+            setAggregatedHistory(combinedData.sort((a, b) => a.year.localeCompare(b.year)));
+
+        } catch (error) {
+            console.error('Failed to load director dashboard data:', error);
+            alert('Could not load all data for the Director Dashboard.');
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
 
     useEffect(() => {
-        const allStats: LocationStats[] = [];
-        
-        // --- Process All Locations Status ---
-        LOCATIONS.forEach(location => {
-            const registrationKey = `registrations_${location}`;
-            const campRegistrations: Registration[] = JSON.parse(sessionStorage.getItem(registrationKey) || '[]');
-            
-            const total = campRegistrations.length;
-            const rejected = campRegistrations.filter(r => r.status === 'REJECTED').length;
-            const accepted = campRegistrations.filter(r => r.status === 'ACCEPTED').length;
-            const pending = campRegistrations.filter(r => r.status === 'REGISTERED').length;
-            
-            allStats.push({ location, total, accepted, rejected, pending });
-        });
-        setReportData(allStats);
-        
-        // --- Process Aggregated History ---
-        const yearlyTotals: { [year: string]: number } = {};
-
-        // Process historical data
-        historicalData.forEach(item => {
-            const year = item.campYear;
-            if (!yearlyTotals[year]) {
-                yearlyTotals[year] = 0;
-            }
-            // Correctly add the total from the historical data file
-            yearlyTotals[year] += item.totalRegistrations;
-        });
-
-        // Process live data from all locations for the current year
-        let liveDataTotalForCurrentYear = 0;
-        LOCATIONS.forEach(location => {
-            const registrationKey = `registrations_${location}`;
-            const campRegistrations: Registration[] = JSON.parse(sessionStorage.getItem(registrationKey) || '[]');
-            liveDataTotalForCurrentYear += campRegistrations.length;
-        });
-        
-        // Overwrite the historical value for the current year with live data
-        if (yearlyTotals[CURRENT_YEAR] !== undefined) {
-          yearlyTotals[CURRENT_YEAR] = liveDataTotalForCurrentYear;
-        } else {
-          // If current year is not in historical data, add it as live
-          if (liveDataTotalForCurrentYear > 0) {
-              yearlyTotals[CURRENT_YEAR] = liveDataTotalForCurrentYear;
-          }
-        }
-
-
-        const combinedData: YearlyTotal[] = Object.entries(yearlyTotals).map(([year, total]) => ({
-            year,
-            total,
-            source: year === CURRENT_YEAR ? 'Live' : 'Historical',
-        }));
-        
-        setAggregatedHistory(combinedData.sort((a, b) => a.year.localeCompare(b.year)));
-
-    }, [router]);
+        loadDirectorData();
+    }, [loadDirectorData]);
 
     const handleLogout = () => {
         sessionStorage.clear();
@@ -129,10 +126,7 @@ export default function DirectorPage() {
     const openChartInNewWindow = (chartType: string, chartData: any, title?: string) => {
         const data = {
             chartType,
-            chartData: {
-                ...chartData,
-                title: title
-            }
+            chartData: { ...chartData, title: title }
         }
         sessionStorage.setItem('chartViewData', JSON.stringify(data));
         window.open('/chart', '_blank', 'width=1000,height=700');
@@ -142,20 +136,13 @@ export default function DirectorPage() {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-            legend: { 
-                display: false
-            },
-            title: { 
-                display: false,
-            },
+            legend: { display: false },
+            title: { display: false },
             datalabels: {
                 anchor: 'end' as const,
                 align: 'top' as const,
                 color: '#4A5568',
-                font: {
-                    weight: 'bold' as const,
-                    size: 14,
-                },
+                font: { weight: 'bold' as const, size: 14 },
                  formatter: (value: number) => value > 0 ? value : '',
             },
         },
@@ -167,19 +154,10 @@ export default function DirectorPage() {
             },
             x: {
                 grid: { display: false, },
-                ticks: {
-                    color: '#333',
-                    font: {
-                        weight: 'bold' as const,
-                    }
-                }
+                ticks: { color: '#333', font: { weight: 'bold' as const } }
             }
         },
-        elements: {
-            bar: {
-                borderRadius: 4,
-            }
-        }
+        elements: { bar: { borderRadius: 4 } }
     });
 
     const getStatusChartData = (item: LocationStats) => {
@@ -188,22 +166,18 @@ export default function DirectorPage() {
         accepted: { base: 'rgba(34, 197, 94, 1)',   light: 'rgba(134, 239, 172, 1)', border: 'rgba(22, 163, 74, 1)' },
         rejected: { base: 'rgba(239, 68, 68, 1)',   light: 'rgba(252, 165, 165, 1)', border: 'rgba(220, 38, 38, 1)' }
       };
-      
       const barColors = [colors.total, colors.accepted, colors.rejected];
 
       return {
         labels: ['Total', 'Accepted', 'Rejected'],
-        datasets: [
-            {
+        datasets: [{
                 label: 'Registrations',
                 data: [item.total, item.accepted, item.rejected],
                 backgroundColor: (context: any) => {
                     const { ctx, chartArea, dataIndex } = context.chart;
                     if (!chartArea) { return; }
-                    
                     const selectedColor = barColors[dataIndex];
                     if(!selectedColor) return 'rgba(0,0,0,0.1)';
-
                     const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
                     gradient.addColorStop(0, selectedColor.base);
                     gradient.addColorStop(1, selectedColor.light);
@@ -211,8 +185,7 @@ export default function DirectorPage() {
                 },
                 borderColor: barColors.map(c => c.border),
                 borderWidth: 2,
-            },
-        ],
+            }],
       };
     };
 
@@ -221,15 +194,9 @@ export default function DirectorPage() {
             chartType: 'Bar',
             chartData: {
                 data: getStatusChartData(item),
-                options: {
-                    ...getStatusChartOptions(item.location),
-                    plugins: {
-                        ...getStatusChartOptions(item.location).plugins,
-                        title: {
-                            display: true,
-                            text: `Registration Status for ${item.location}`,
-                            font: { size: 18 }
-                        }
+                options: { ...getStatusChartOptions(item.location),
+                    plugins: { ...getStatusChartOptions(item.location).plugins,
+                        title: { display: true, text: `Registration Status for ${item.location}`, font: { size: 18 } }
                     }
                 }
             }
@@ -246,8 +213,8 @@ export default function DirectorPage() {
         }]
     };
     
-    if (reportData.length === 0) {
-        return <div>Loading analytics...</div>;
+    if (isLoading) {
+        return <div className="flex items-center justify-center min-h-screen">Loading director analytics...</div>;
     }
 
     return (
@@ -271,7 +238,7 @@ export default function DirectorPage() {
 
             <main className="flex-grow p-4 md:p-8">
                  <section className="mb-12">
-                    <h2 className="text-3xl font-bold mb-6 text-center">BDC Status Report - All Locations (2026-27)</h2>
+                    <h2 className="text-3xl font-bold mb-6 text-center">BDC Status Report - All Locations ({CURRENT_YEAR_FULL})</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
                         {reportData.map(item => (
                             <Card key={item.location} className="shadow-md hover:shadow-lg transition-shadow duration-300 border-l-4" style={{borderLeftColor: locationColors[item.location]?.base}}>

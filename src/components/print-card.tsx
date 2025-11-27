@@ -1,16 +1,15 @@
 'use client';
 
-import { Registration, BloodBank } from '@/lib/mock-data';
+import { Registration, BloodBank } from '@/lib/types';
 
 interface PrintCardProps {
     registration: Registration;
     agency?: BloodBank;
+    registrations: Registration[];
 }
 
-export function PrintCard({ registration, agency }: PrintCardProps) {
-    const registrationsForAgency: Registration[] = JSON.parse(sessionStorage.getItem(`registrations_${registration.location}`) || '[]')
-        .filter((r: Registration) => r.agency === (agency ? agency.name : ''));
-    
+export function PrintCard({ registration, agency, registrations }: PrintCardProps) {
+    const registrationsForAgency = registrations.filter(r => r.agency === (agency ? agency.name : ''));
     const srNo = registrationsForAgency.findIndex(r => r.id === registration.id) + 1;
 
     return (

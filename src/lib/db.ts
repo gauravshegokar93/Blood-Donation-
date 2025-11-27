@@ -1,5 +1,5 @@
 
-import sql from 'mssql';
+import sql, { NVarChar, Int } from 'mssql';
 
 const config = {
   server: process.env.DB_SERVER!,
@@ -12,33 +12,46 @@ const config = {
   },
 };
 
-let pool: sql.ConnectionPool;
+let pool: sql.ConnectionPool | null = null;
 
-async function getDbPool() {
-  if (!pool) {
+async function getDbPool(): Promise<sql.ConnectionPool> {
+  if (!pool || !pool.connected) {
     try {
       pool = await sql.connect(config);
       console.log('Connected to SQL Server');
+      pool.on('error', err => {
+        console.error('SQL Pool Error', err);
+        pool = null; // Reset pool on error
+      });
     } catch (err) {
-      console.error('Database Connection Failed! Bad Config: ', err);
-      throw err; // Rethrow error to be handled by caller
+      console.error('Database Connection Failed! Bad Config:', err);
+      // Ensure pool is reset so next call will try to reconnect
+      pool = null;
+      throw err;
     }
   }
   return pool;
 }
 
-export async function executeQuery(query: string, params: { [key: string]: any } = {}) {
+export async function executeQuery(query: string, params: { [key: string]: any } = {}): Promise<any[]> {
+  let requestPool: sql.ConnectionPool | null = null;
   try {
-    const pool = await getDbPool();
-    const request = pool.request();
+    requestPool = await getDbPool();
+    const request = requestPool.request();
     
     for (const key in params) {
-      // Assuming types for simplicity, you might need more robust type handling
-      if (typeof params[key] === 'number') {
-        request.input(key, sql.Int, params[key]);
-      } else {
-        request.input(key, sql.NVarChar, params[key]);
-      }
+        if (params.hasOwnProperty(key)) {
+            const value = params[key];
+            // Basic type inference, can be expanded
+            if (typeof value === 'number' && Number.isInteger(value)) {
+                request.input(key, Int, value);
+            } else if (typeof value === 'number') { // float, decimal etc.
+                 request.input(key, sql.Decimal(10, 2), value); // Example, adjust as needed
+            }
+            else { // Default to string
+                request.input(key, NVarChar, value);
+            }
+        }
     }
 
     const result = await request.query(query);
@@ -48,16 +61,3 @@ export async function executeQuery(query: string, params: { [key: string]: any }
     throw new Error('Error executing query');
   }
 }
-
-// Example usage:
-/*
--- Create your BloodBank table in SQL Server
-CREATE TABLE BloodBanks (
-    id INT IDENTITY(1,1) PRIMARY KEY,
-    name NVARCHAR(255) NOT NULL,
-    location NVARCHAR(100) NOT NULL,
-    year NVARCHAR(10) NOT NULL,
-    counter INT,
-    quota INT
-);
-*/

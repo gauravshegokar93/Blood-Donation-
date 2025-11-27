@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card';
@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ArrowUp, ArrowDown, PlusCircle, Edit, Trash2, Printer, Ban, X } from 'lucide-react';
-import { Registration, BloodBank } from '@/lib/mock-data';
+import { Registration, BloodBank } from '@/lib/types';
 import { PrintCard } from '@/components/print-card';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -20,19 +20,6 @@ const genders = ['Male', 'Female', 'Other'];
 type SortKey = keyof Registration;
 const YEAR = '2026-27';
 
-function generateRegistrationId(location: string, existingRegistrations: Registration[]): string {
-    const locationPrefix = location.substring(0, 3).toUpperCase();
-    const existingIds = existingRegistrations.map(r => r.id);
-    let nextIdNumber = existingRegistrations.length + 1;
-    let nextId;
-    do {
-      nextId = `${locationPrefix}-${nextIdNumber.toString().padStart(4, '0')}`;
-      nextIdNumber++;
-    } while (existingIds.includes(nextId));
-    return nextId;
-}
-
-
 export default function RegistrationPage() {
     const router = useRouter();
     const [location, setLocation] = useState<string | null>(null);
@@ -41,42 +28,60 @@ export default function RegistrationPage() {
     const [agencies, setAgencies] = useState<BloodBank[]>([]);
     const [stats, setStats] = useState({ accepted: 0, limit: 0 });
     const [agencyCounts, setAgencyCounts] = useState<{[key: string]: number}>({});
+    const [isLoading, setIsLoading] = useState(true);
 
     const initialNewRegState = { name: '', bloodGroup: '', mobile: '', agency: '', age: undefined, gender: undefined };
     const [formState, setFormState] = useState<{name: string, bloodGroup: string, mobile: string, agency: string, age?: number, gender?: 'Male' | 'Female' | 'Other'}>(initialNewRegState);
     const [nextRegId, setNextRegId] = useState('');
     
-    const [sortKey, setSortKey] = useState<SortKey>('id');
+    const [sortKey, setSortKey] = useState<SortKey>('createdAt');
     const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
     
     const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null);
     const [isEditing, setIsEditing] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-    const loadDataForCamp = (loc: string) => {
-        const registrationKey = `registrations_${loc}`;
-        const bloodBankKey = `bloodBanks_${loc}`;
+    const loadDataForCamp = useCallback(async (loc: string) => {
+        setIsLoading(true);
+        try {
+            const [regResponse, bankResponse] = await Promise.all([
+                fetch(`/api/registrations?location=${loc}`),
+                fetch(`/api/blood-banks?location=${loc}`)
+            ]);
 
-        const campRegistrations: Registration[] = JSON.parse(sessionStorage.getItem(registrationKey) || '[]') || [];
-        setRegistrations(campRegistrations);
-        setNextRegId(generateRegistrationId(loc, campRegistrations));
+            if (!regResponse.ok || !bankResponse.ok) throw new Error('Failed to load data');
+            
+            const campRegistrations: Registration[] = await regResponse.json();
+            const campAgencies: BloodBank[] = await bankResponse.json();
 
-        const campAgencies: BloodBank[] = JSON.parse(sessionStorage.getItem(bloodBankKey) || '[]');
-        setAgencies(campAgencies);
+            setRegistrations(campRegistrations);
+            
+            // Generate next ID based on fetched data
+            const locationPrefix = loc.substring(0, 3).toUpperCase();
+            const count = campRegistrations.length;
+            const newId = `${locationPrefix}-${(count + 1).toString().padStart(4, '0')}`;
+            setNextRegId(newId);
 
-        const limit = campAgencies.reduce((sum, bank) => sum + bank.quota, 0);
-        const campAccepted = campRegistrations.filter(r => r.status === 'ACCEPTED').length;
-        setStats({
-            accepted: campAccepted,
-            limit: limit
-        });
-        
-        const counts: {[key: string]: number} = {};
-        campAgencies.forEach(agency => {
-            counts[agency.name] = campRegistrations.filter(reg => reg.agency === agency.name).length;
-        });
-        setAgencyCounts(counts);
-    };
+            setAgencies(campAgencies);
+
+            const limit = campAgencies.reduce((sum, bank) => sum + bank.quota, 0);
+            const campAccepted = campRegistrations.filter(r => r.status === 'ACCEPTED').length;
+            setStats({ accepted: campAccepted, limit: limit });
+            
+            const counts: {[key: string]: number} = {};
+            campAgencies.forEach(agency => {
+                counts[agency.name] = campRegistrations.filter(reg => reg.agency === agency.name).length;
+            });
+            setAgencyCounts(counts);
+
+        } catch (error) {
+            console.error(error);
+            alert('Could not load page data.');
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
 
     useEffect(() => {
         const savedLocation = sessionStorage.getItem('bdcLocation');
@@ -92,37 +97,43 @@ export default function RegistrationPage() {
         window.addEventListener('focus', handleFocus);
         return () => window.removeEventListener('focus', handleFocus);
 
-    }, [router]);
+    }, [router, loadDataForCamp]);
     
-    const handleSaveRegistration = (e: React.FormEvent) => {
+    const handleSaveRegistration = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (formState.name && formState.bloodGroup && formState.mobile && formState.agency && location) {
-            const registrationKey = `registrations_${location}`;
-            const campRegistrations: Registration[] = JSON.parse(sessionStorage.getItem(registrationKey) || '[]');
-            
-            let updatedRegistrations;
+        if (!formState.name || !formState.bloodGroup || !formState.mobile || !formState.agency || !location) {
+            alert('Please fill out all required fields.');
+            return;
+        }
+        
+        setIsSubmitting(true);
+        const body = {
+            ...formState,
+            location,
+            year: YEAR,
+            id: isEditing ? selectedRegistration?.id : undefined,
+        };
 
-            if (isEditing && selectedRegistration) {
-                 updatedRegistrations = campRegistrations.map(r => r.id === selectedRegistration.id ? { ...selectedRegistration, ...formState, year: YEAR, location: location } : r);
-            } else {
-                const newReg: Registration = {
-                    id: nextRegId,
-                    name: formState.name,
-                    bloodGroup: formState.bloodGroup,
-                    mobile: formState.mobile,
-                    agency: formState.agency,
-                    age: formState.age,
-                    gender: formState.gender,
-                    location: location,
-                    year: YEAR,
-                    status: 'REGISTERED',
-                };
-                updatedRegistrations = [...campRegistrations, newReg];
+        try {
+            const response = await fetch('/api/registrations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to save registration');
             }
-            
-            sessionStorage.setItem(registrationKey, JSON.stringify(updatedRegistrations));
+
             handleCancel();
-            loadDataForCamp(location);
+            await loadDataForCamp(location);
+
+        } catch (error: any) {
+            console.error(error);
+            alert(`Error: ${error.message}`);
+        } finally {
+            setIsSubmitting(false);
         }
     };
     
@@ -152,20 +163,24 @@ export default function RegistrationPage() {
             age: registration.age,
             gender: registration.gender,
         });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
     
-    const handleDelete = () => {
+    const handleDelete = async () => {
         if (selectedRegistration && location) {
-            const registrationKey = `registrations_${location}`;
-            const campRegistrations: Registration[] = JSON.parse(sessionStorage.getItem(registrationKey) || '[]');
-            const updatedRegistrations = campRegistrations.filter(r => r.id !== selectedRegistration.id);
-            sessionStorage.setItem(registrationKey, JSON.stringify(updatedRegistrations));
-            
-            setIsDeleteDialogOpen(false);
-            setSelectedRegistration(null);
-            setIsEditing(false);
-            setFormState(initialNewRegState);
-            loadDataForCamp(location);
+            try {
+                const response = await fetch(`/api/registrations?id=${selectedRegistration.id}`, {
+                    method: 'DELETE',
+                });
+                if (!response.ok) throw new Error('Failed to delete');
+
+                setIsDeleteDialogOpen(false);
+                handleCancel();
+                await loadDataForCamp(location);
+            } catch (error) {
+                console.error(error);
+                alert('Failed to delete registration.');
+            }
         }
     };
 
@@ -216,7 +231,7 @@ export default function RegistrationPage() {
         if (aValue < bValue) return order === 'asc' ? -1 : 1;
         if (aValue > bValue) return order === 'asc' ? 1 : -1;
         return 0;
-    }).slice(0, 30);
+    });
 
     const year = YEAR;
     const selectedAgency = agencies.find(a => a.name === selectedRegistration?.agency);
@@ -327,7 +342,7 @@ export default function RegistrationPage() {
                             </div>
                             <div className="flex items-center justify-between pt-2">
                                 <p className="text-sm text-muted-foreground">Press Enter or click {isEditing ? 'Save' : 'Add'} to save</p>
-                                <Button type="submit">{isEditing ? 'Save' : 'Add'}</Button>
+                                <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : (isEditing ? 'Save' : 'Add')}</Button>
                             </div>
                         </form>
 
@@ -343,19 +358,25 @@ export default function RegistrationPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {sortedRegistrations.map(reg => (
-                                        <TableRow 
-                                            key={reg.id}
-                                            onClick={() => handleSelectForEdit(reg)}
-                                            className={selectedRegistration?.id === reg.id ? 'bg-blue-200' : 'cursor-pointer hover:bg-blue-100'}
-                                        >
-                                            <TableCell>{reg.id}</TableCell>
-                                            <TableCell>{reg.name}</TableCell>
-                                            <TableCell>{reg.bloodGroup}</TableCell>
-                                            <TableCell>{reg.mobile}</TableCell>
-                                            <TableCell>{reg.agency}</TableCell>
-                                        </TableRow>
-                                    ))}
+                                    {isLoading ? (
+                                      <TableRow><TableCell colSpan={5} className="text-center">Loading registrations...</TableCell></TableRow>
+                                    ) : sortedRegistrations.length > 0 ? (
+                                        sortedRegistrations.map(reg => (
+                                            <TableRow 
+                                                key={reg.id}
+                                                onClick={() => handleSelectForEdit(reg)}
+                                                className={selectedRegistration?.id === reg.id ? 'bg-blue-200' : 'cursor-pointer hover:bg-blue-100'}
+                                            >
+                                                <TableCell>{reg.id}</TableCell>
+                                                <TableCell>{reg.name}</TableCell>
+                                                <TableCell>{reg.bloodGroup}</TableCell>
+                                                <TableCell>{reg.mobile}</TableCell>
+                                                <TableCell>{reg.agency}</TableCell>
+                                            </TableRow>
+                                        ))
+                                    ) : (
+                                       <TableRow><TableCell colSpan={5} className="text-center">No registrations found.</TableCell></TableRow>
+                                    )}
                                 </TableBody>
                             </Table>
                         </div>
@@ -375,12 +396,18 @@ export default function RegistrationPage() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {Object.entries(agencyCounts).map(([agencyName, count]) => (
-                                            <TableRow key={agencyName}>
-                                                <TableCell className="font-medium">{agencyName}</TableCell>
-                                                <TableCell className="text-right">{count}</TableCell>
-                                            </TableRow>
-                                        ))}
+                                        {isLoading ? (
+                                            <TableRow><TableCell colSpan={2} className="text-center">Loading...</TableCell></TableRow>
+                                        ) : Object.keys(agencyCounts).length > 0 ? (
+                                            Object.entries(agencyCounts).map(([agencyName, count]) => (
+                                                <TableRow key={agencyName}>
+                                                    <TableCell className="font-medium">{agencyName}</TableCell>
+                                                    <TableCell className="text-right">{count}</TableCell>
+                                                </TableRow>
+                                            ))
+                                        ) : (
+                                             <TableRow><TableCell colSpan={2} className="text-center">No agencies found.</TableCell></TableRow>
+                                        )}
                                     </TableBody>
                                 </Table>
                             </CardContent>
@@ -396,7 +423,7 @@ export default function RegistrationPage() {
             <div className="fixed -left-[9999px] top-0">
                 <div id="print-card-container">
                     {selectedRegistration && (
-                        <PrintCard registration={selectedRegistration} agency={selectedAgency} />
+                        <PrintCard registration={selectedRegistration} agency={selectedAgency} registrations={registrations}/>
                     )}
                 </div>
             </div>

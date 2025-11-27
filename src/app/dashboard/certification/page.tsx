@@ -1,14 +1,14 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Printer, Eye } from 'lucide-react';
-import { Registration } from '@/lib/mock-data';
+import { Registration } from '@/lib/types';
 import { Certificate } from '@/components/certificate';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 
@@ -21,20 +21,34 @@ export default function CertificationPage() {
   const [filteredRegistrations, setFilteredRegistrations] = useState<Registration[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
+  const loadRegistrations = useCallback(async (loc: string) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/registrations?location=${loc}`);
+      if (!response.ok) throw new Error('Failed to fetch registrations');
+      const data: Registration[] = await response.json();
+      const nonRejected = data.filter(r => r.status !== 'REJECTED');
+      setAllRegistrations(nonRejected);
+      setFilteredRegistrations(nonRejected);
+    } catch (error) {
+      console.error(error);
+      alert('Could not load registrations.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+  
   useEffect(() => {
     const savedLocation = sessionStorage.getItem('bdcLocation');
     if (!savedLocation) {
       router.push('/');
     } else {
       setLocation(savedLocation);
-      const registrationKey = `registrations_${savedLocation}`;
-      const registrations: Registration[] = JSON.parse(sessionStorage.getItem(registrationKey) || '[]');
-      const nonRejectedRegistrations = registrations.filter(r => r.status !== 'REJECTED');
-      setAllRegistrations(nonRejectedRegistrations);
-      setFilteredRegistrations(nonRejectedRegistrations);
+      loadRegistrations(savedLocation);
     }
-  }, [router]);
+  }, [router, loadRegistrations]);
 
   useEffect(() => {
     const results = allRegistrations.filter(reg =>
@@ -97,7 +111,9 @@ export default function CertificationPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredRegistrations.length > 0 ? (
+                  {isLoading ? (
+                    <TableRow><TableCell colSpan={5} className="text-center">Loading...</TableCell></TableRow>
+                  ) : filteredRegistrations.length > 0 ? (
                     filteredRegistrations.map((reg) => (
                       <TableRow key={reg.id}>
                         <TableCell>{reg.id}</TableCell>

@@ -6,7 +6,7 @@ import { Droplets, Users, BarChart, Calendar, LogOut, Menu, X, Banknote, UserPlu
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 import Link from "next/link";
-import { Registration, BloodBank } from "@/lib/mock-data";
+import { Registration, BloodBank } from "@/lib/types";
 import { RegistrationStatusChart, BloodGroupChart, AgencyChart } from '@/components/dashboard-charts';
 import { Button } from "@/components/ui/button";
 
@@ -31,53 +31,66 @@ export default function Dashboard() {
     
     const [recentRegistrations, setRecentRegistrations] = useState<Registration[]>([]);
 
-    const loadDashboardData = useCallback((currentLocation: string) => {
-        const registrationKey = `registrations_${currentLocation}`;
-        const bloodBankKey = `bloodBanks_${currentLocation}`;
+    const loadDashboardData = useCallback(async (currentLocation: string) => {
+        try {
+            const [regResponse, bankResponse] = await Promise.all([
+                fetch(`/api/registrations?location=${currentLocation}`),
+                fetch(`/api/blood-banks?location=${currentLocation}`),
+            ]);
 
-        const campRegistrations: Registration[] = JSON.parse(sessionStorage.getItem(registrationKey) || '[]');
-        const campBloodBanks: BloodBank[] = JSON.parse(sessionStorage.getItem(bloodBankKey) || '[]');
-        
-        const campRegisteredCount = campRegistrations.length;
-        const campRejectedCount = campRegistrations.filter(r => r.status === 'REJECTED').length;
-        const campAcceptedCount = campRegistrations.filter(r => r.status === 'ACCEPTED').length;
-        const campPendingCount = campRegistrations.filter(r => r.status === 'REGISTERED').length;
-
-        setStats({
-            totalRegistrations: campRegisteredCount,
-            totalAccepted: campAcceptedCount,
-            totalRejected: campRejectedCount,
-        });
-
-        const bloodGroupCounts = campRegistrations.reduce((acc, reg) => {
-            acc[reg.bloodGroup] = (acc[reg.bloodGroup] || 0) + 1;
-            return acc;
-        }, {} as {[key: string]: number});
-        
-        const agencyCounts = campRegistrations.reduce((acc, reg) => {
-             if (reg.agency) {
-                acc[reg.agency] = (acc[reg.agency] || 0) + 1;
+            if (!regResponse.ok || !bankResponse.ok) {
+                throw new Error('Failed to fetch dashboard data');
             }
-            return acc;
-        }, {} as {[key: string]: number});
 
-        campBloodBanks.forEach(bank => {
-            if (!agencyCounts[bank.name]) {
-                agencyCounts[bank.name] = 0;
-            }
-        });
-        
-        setChartData({
-            statusData: {
-                accepted: campAcceptedCount,
-                rejected: campRejectedCount,
-                pending: campPendingCount,
-            },
-            bloodGroupData: bloodGroupCounts,
-            agencyData: agencyCounts,
-        });
+            const campRegistrations: Registration[] = await regResponse.json();
+            const campBloodBanks: BloodBank[] = await bankResponse.json();
 
-        setRecentRegistrations(campRegistrations.slice(-5).reverse());
+            const campRegisteredCount = campRegistrations.length;
+            const campRejectedCount = campRegistrations.filter(r => r.status === 'REJECTED').length;
+            const campAcceptedCount = campRegistrations.filter(r => r.status === 'ACCEPTED').length;
+            const campPendingCount = campRegistrations.filter(r => r.status === 'REGISTERED').length;
+
+            setStats({
+                totalRegistrations: campRegisteredCount,
+                totalAccepted: campAcceptedCount,
+                totalRejected: campRejectedCount,
+            });
+
+            const bloodGroupCounts = campRegistrations.reduce((acc, reg) => {
+                acc[reg.bloodGroup] = (acc[reg.bloodGroup] || 0) + 1;
+                return acc;
+            }, {} as {[key: string]: number});
+            
+            const agencyCounts = campRegistrations.reduce((acc, reg) => {
+                if (reg.agency) {
+                    acc[reg.agency] = (acc[reg.agency] || 0) + 1;
+                }
+                return acc;
+            }, {} as {[key: string]: number});
+
+            campBloodBanks.forEach(bank => {
+                if (!agencyCounts[bank.name]) {
+                    agencyCounts[bank.name] = 0;
+                }
+            });
+            
+            setChartData({
+                statusData: {
+                    accepted: campAcceptedCount,
+                    rejected: campRejectedCount,
+                    pending: campPendingCount,
+                },
+                bloodGroupData: bloodGroupCounts,
+                agencyData: agencyCounts,
+            });
+
+            // The API already returns registrations sorted by createdAt DESC
+            setRecentRegistrations(campRegistrations.slice(0, 5));
+
+        } catch (error) {
+            console.error("Failed to load dashboard data:", error);
+            // Optionally, set an error state to show a message to the user
+        }
     }, []);
 
     useEffect(() => {

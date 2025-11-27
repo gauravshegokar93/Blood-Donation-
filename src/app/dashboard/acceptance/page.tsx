@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Registration } from '@/lib/mock-data';
+import { Registration } from '@/lib/types';
 
 const YEAR = '2026-27';
 
@@ -14,6 +14,7 @@ export default function AcceptancePage() {
     const router = useRouter();
     const [location, setLocation] = useState<string | null>(null);
     const [registrationId, setRegistrationId] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         const savedLocation = sessionStorage.getItem('bdcLocation');
@@ -24,40 +25,68 @@ export default function AcceptancePage() {
         }
     }, [router]);
     
-    const handleAccept = (e: React.FormEvent) => {
+    const handleAccept = async (e: React.FormEvent) => {
         e.preventDefault();
-        const regId = registrationId;
+        const regId = registrationId.trim();
         if (!regId || !location) {
             alert('Please enter a valid Registration ID.');
             return;
         }
 
-        const registrationKey = `registrations_${location}`;
-        const campRegistrations: Registration[] = JSON.parse(sessionStorage.getItem(registrationKey) || '[]');
-        const registrationIndex = campRegistrations.findIndex(r => r.id === regId);
+        setIsLoading(true);
 
-        if (registrationIndex === -1) {
-            alert(`Registration ID "${regId}" not found for this camp.`);
-            return;
-        }
-        
-        const currentStatus = campRegistrations[registrationIndex].status;
+        try {
+            // First, get the registration to check its status
+            const getRes = await fetch(`/api/registrations?id=${regId}`);
+            
+            if (!getRes.ok) {
+                if (getRes.status === 404) {
+                    alert(`Registration ID "${regId}" not found.`);
+                } else {
+                    alert('Failed to fetch registration details. Please try again.');
+                }
+                setIsLoading(false);
+                return;
+            }
 
-        if (currentStatus === 'REJECTED') {
-            alert(`Registration ID "${regId}" has been rejected and cannot be accepted.`);
-            return;
-        }
+            const registration: Registration = await getRes.json();
 
-        if(currentStatus !== 'REGISTERED') {
-            alert(`Registration ID "${regId}" cannot be accepted. Current status: ${currentStatus}.`);
-            return;
+            if (registration.status === 'REJECTED') {
+                alert(`Registration ID "${regId}" has been rejected and cannot be accepted.`);
+                setIsLoading(false);
+                return;
+            }
+
+            if(registration.status !== 'REGISTERED') {
+                alert(`Registration ID "${regId}" cannot be accepted. Current status: ${registration.status}.`);
+                setIsLoading(false);
+                return;
+            }
+
+            // If status is REGISTERED, proceed to accept
+            const updateRes = await fetch('/api/registrations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    id: regId,
+                    status: 'ACCEPTED',
+                    location: location, // Include location and year for context if needed by API
+                    year: YEAR,
+                })
+            });
+
+            if (!updateRes.ok) {
+                 throw new Error('Failed to update registration status');
+            }
+            
+            alert(`Registration ID "${regId}" has been accepted. The dashboard statistics will be updated.`);
+            setRegistrationId(''); // Reset input
+        } catch (error) {
+            console.error('Error accepting registration:', error);
+            alert('An error occurred. Please try again.');
+        } finally {
+            setIsLoading(false);
         }
-        
-        campRegistrations[registrationIndex].status = 'ACCEPTED';
-        sessionStorage.setItem(registrationKey, JSON.stringify(campRegistrations));
-        
-        alert(`Registration ID "${regId}" has been accepted. The dashboard statistics will be updated.`);
-        setRegistrationId(''); // Reset input
     };
     
     if (!location) {
@@ -90,7 +119,7 @@ export default function AcceptancePage() {
                     </CardContent>
                     <CardFooter className="flex justify-between">
                          <Button variant="ghost" onClick={() => router.push('/dashboard')}>Cancel</Button>
-                         <Button type="submit">Accept</Button>
+                         <Button type="submit" disabled={isLoading}>{isLoading ? 'Accepting...' : 'Accept'}</Button>
                     </CardFooter>
                 </form>
             </Card>

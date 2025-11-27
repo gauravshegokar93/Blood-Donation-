@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { PlusCircle, Edit, Trash2, Printer, Ban, X } from 'lucide-react';
-import { BloodBank } from '@/lib/mock-data';
+import { BloodBank } from '@/lib/types';
 
 const YEAR = '2026-27';
 
@@ -20,14 +20,24 @@ export default function BloodBankPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [location, setLocation] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const initialFormState: Partial<Omit<BloodBank, 'id'>> = { name: '', location: '', counter: 0, quota: 0, year: YEAR };
   const [formState, setFormState] = useState<Partial<BloodBank>>(initialFormState);
 
-  const loadBloodBanks = useCallback((loc: string) => {
-    const bloodBankKey = `bloodBanks_${loc}`;
-    const data: BloodBank[] = JSON.parse(sessionStorage.getItem(bloodBankKey) || '[]');
-    setBloodBanks(data);
+  const loadBloodBanks = useCallback(async (loc: string) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/blood-banks?location=${loc}`);
+      if (!response.ok) throw new Error('Failed to fetch blood banks');
+      const data: BloodBank[] = await response.json();
+      setBloodBanks(data);
+    } catch (error) {
+      console.error(error);
+      alert('Could not load blood banks.');
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -57,14 +67,19 @@ export default function BloodBankPage() {
 
   const handleDelete = async () => {
     if (selectedBank && location) {
-        const bloodBankKey = `bloodBanks_${location}`;
-        const currentBanks: BloodBank[] = JSON.parse(sessionStorage.getItem(bloodBankKey) || '[]');
-        const updatedBanks = currentBanks.filter(b => b.id !== selectedBank.id);
-        sessionStorage.setItem(bloodBankKey, JSON.stringify(updatedBanks));
-        
-        loadBloodBanks(location);
-        setIsDeleteDialogOpen(false);
-        setSelectedBank(null);
+        try {
+            const response = await fetch(`/api/blood-banks?id=${selectedBank.id}`, {
+                method: 'DELETE',
+            });
+            if (!response.ok) throw new Error('Failed to delete blood bank');
+
+            await loadBloodBanks(location);
+            setIsDeleteDialogOpen(false);
+            setSelectedBank(null);
+        } catch (error) {
+            console.error(error);
+            alert('Failed to delete blood bank.');
+        }
     }
   };
   
@@ -79,28 +94,20 @@ export default function BloodBankPage() {
     e.preventDefault();
     if (!location || !formState.name) return;
 
-    const bloodBankKey = `bloodBanks_${location}`;
-    const currentBanks: BloodBank[] = JSON.parse(sessionStorage.getItem(bloodBankKey) || '[]');
-    
-    if (formState.id) { // Editing existing bank
-        const updatedBanks = currentBanks.map(b => b.id === formState.id ? { ...b, ...formState } as BloodBank : b);
-        sessionStorage.setItem(bloodBankKey, JSON.stringify(updatedBanks));
-    } else { // Creating new bank
-        const newId = currentBanks.length > 0 ? Math.max(...currentBanks.map(b => b.id)) + 1 : 1;
-        const newBank: BloodBank = {
-            id: newId,
-            name: formState.name,
-            location: location,
-            year: YEAR,
-            counter: formState.counter || 0,
-            quota: formState.quota || 0,
-        };
-        const updatedBanks = [...currentBanks, newBank];
-        sessionStorage.setItem(bloodBankKey, JSON.stringify(updatedBanks));
-    }
+    try {
+        const response = await fetch('/api/blood-banks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formState),
+        });
+        if (!response.ok) throw new Error('Failed to save blood bank');
 
-    loadBloodBanks(location);
-    handleCancel();
+        await loadBloodBanks(location);
+        handleCancel();
+    } catch (error) {
+        console.error(error);
+        alert('Failed to save blood bank.');
+    }
   };
 
   const handleClose = () => {
@@ -186,19 +193,25 @@ export default function BloodBankPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {bloodBanks.map(bank => (
-                  <TableRow 
-                    key={bank.id} 
-                    onClick={() => setSelectedBank(bank)}
-                    className={selectedBank?.id === bank.id ? 'bg-blue-200' : 'cursor-pointer hover:bg-blue-100'}
-                  >
-                    <TableCell>{bank.id}</TableCell>
-                    <TableCell>{bank.name}</TableCell>
-                    <TableCell>{bank.counter}</TableCell>
-                    <TableCell>{bank.quota}</TableCell>
-                    <TableCell>{bank.location}</TableCell>
-                  </TableRow>
-                ))}
+                {isLoading ? (
+                  <TableRow><TableCell colSpan={5} className="text-center">Loading...</TableCell></TableRow>
+                ) : bloodBanks.length > 0 ? (
+                  bloodBanks.map(bank => (
+                    <TableRow 
+                      key={bank.id} 
+                      onClick={() => setSelectedBank(bank)}
+                      className={selectedBank?.id === bank.id ? 'bg-blue-200' : 'cursor-pointer hover:bg-blue-100'}
+                    >
+                      <TableCell>{bank.id}</TableCell>
+                      <TableCell>{bank.name}</TableCell>
+                      <TableCell>{bank.counter}</TableCell>
+                      <TableCell>{bank.quota}</TableCell>
+                      <TableCell>{bank.location}</TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                   <TableRow><TableCell colSpan={5} className="text-center">No blood banks found for this location.</TableCell></TableRow>
+                )}
               </TableBody>
             </Table>
           </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Registration } from '@/lib/mock-data';
+import { Registration } from '@/lib/types';
 
 const rejectionReasons = [
     "Low Hemoglobin",
@@ -33,15 +33,27 @@ export default function RejectionPage() {
     const [donorName, setDonorName] = useState('');
     const [reason, setReason] = useState('');
     const [isIdValid, setIsIdValid] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const loadData = (loc: string) => {
-        const registrationKey = `registrations_${loc}`;
-        const currentRegistrations: Registration[] = JSON.parse(sessionStorage.getItem(registrationKey) || '[]');
-        setAllCampRegistrations(currentRegistrations);
+    const loadData = useCallback(async (loc: string) => {
+        setIsLoading(true);
+        try {
+            const response = await fetch(`/api/registrations?location=${loc}`);
+            if (!response.ok) throw new Error('Failed to fetch data');
+            const currentRegistrations: Registration[] = await response.json();
+            
+            setAllCampRegistrations(currentRegistrations);
 
-        const campRejectedDonors = currentRegistrations.filter(r => r.status === 'REJECTED');
-        setRejectedDonors(campRejectedDonors);
-    };
+            const campRejectedDonors = currentRegistrations.filter(r => r.status === 'REJECTED');
+            setRejectedDonors(campRejectedDonors);
+        } catch(error) {
+            console.error(error);
+            alert("Failed to load rejection data.");
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
 
     useEffect(() => {
         const savedLocation = sessionStorage.getItem('bdcLocation');
@@ -51,7 +63,7 @@ export default function RejectionPage() {
             setLocation(savedLocation);
             loadData(savedLocation);
         }
-    }, [router]);
+    }, [router, loadData]);
 
     useEffect(() => {
         if (registrationId) {
@@ -69,46 +81,61 @@ export default function RejectionPage() {
         }
     }, [registrationId, allCampRegistrations]);
 
-    const handleReject = (e: React.FormEvent) => {
+    const handleReject = async (e: React.FormEvent) => {
         e.preventDefault();
-        const regId = registrationId;
+        const regId = registrationId.trim();
         if (!regId || !reason || !location) {
             alert('Please enter a Registration ID and select a reason.');
             return;
         }
+        
+        const registrationToReject = allCampRegistrations.find(r => r.id === regId);
+        if (!registrationToReject) {
+             alert(`Registration ID "${regId}" not found for this camp.`);
+            return;
+        }
 
-        const registrationKey = `registrations_${location}`;
-        const registrationIndex = allCampRegistrations.findIndex(r => r.id === regId);
-
-        if (registrationIndex === -1) {
-            alert(`Registration ID "${regId}" not found for this camp.`);
+        if(registrationToReject.status !== 'REGISTERED' && registrationToReject.status !== 'ACCEPTED') {
+            alert(`Registration ID "${regId}" cannot be rejected. Current status: ${registrationToReject.status}.`);
             return;
         }
         
-        if(allCampRegistrations[registrationIndex].status !== 'REGISTERED' && allCampRegistrations[registrationIndex].status !== 'ACCEPTED') {
-            alert(`Registration ID "${regId}" cannot be rejected. Current status: ${allCampRegistrations[registrationIndex].status}.`);
-            return;
+        setIsSubmitting(true);
+        try {
+            const response = await fetch('/api/registrations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: regId,
+                    status: 'REJECTED',
+                    rejectionReason: reason,
+                    location,
+                    year: YEAR,
+                })
+            });
+
+            if (!response.ok) throw new Error('Failed to reject registration');
+
+            alert(`Registration ID "${registrationId}" has been rejected. Reason: ${reason}.`);
+            
+            // Reset form and reload data
+            setRegistrationId(''); 
+            setReason('');
+            await loadData(location);
+
+        } catch (error) {
+            console.error(error);
+            alert('An error occurred while rejecting the donor.');
+        } finally {
+            setIsSubmitting(false);
         }
-        
-        const updatedRegistrations = [...allCampRegistrations];
-        updatedRegistrations[registrationIndex].status = 'REJECTED';
-        updatedRegistrations[registrationIndex].rejectionReason = reason;
-        updatedRegistrations[registrationIndex].rejectionDate = new Date().toISOString().split('T')[0];
-        
-        sessionStorage.setItem(registrationKey, JSON.stringify(updatedRegistrations));
-        
-        alert(`Registration ID "${registrationId}" has been rejected. Reason: ${reason}.`);
-        
-        // Reset form and reload data
-        setRegistrationId(''); 
-        setReason('');
-        loadData(location);
     };
 
     const handleRowClick = (donor: Registration) => {
         setRegistrationId(donor.id);
         setDonorName(donor.name);
         setReason(donor.rejectionReason || '');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
     
     if (!location) {
@@ -162,7 +189,9 @@ export default function RejectionPage() {
                     </CardContent>
                     <CardFooter className="flex justify-between">
                          <Button variant="ghost" onClick={() => router.push('/dashboard')}>Cancel</Button>
-                         <Button type="submit" variant="destructive" disabled={!isIdValid}>Reject</Button>
+                         <Button type="submit" variant="destructive" disabled={!isIdValid || isSubmitting}>
+                            {isSubmitting ? 'Rejecting...' : 'Reject'}
+                         </Button>
                     </CardFooter>
                 </form>
             </Card>
@@ -188,7 +217,9 @@ export default function RejectionPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {rejectedDonors.length > 0 ? (
+                                {isLoading ? (
+                                    <TableRow><TableCell colSpan={8} className="text-center">Loading...</TableCell></TableRow>
+                                ) : rejectedDonors.length > 0 ? (
                                     rejectedDonors.map(donor => (
                                         <TableRow key={donor.id} onClick={() => handleRowClick(donor)} className="cursor-pointer hover:bg-gray-100">
                                             <TableCell>{donor.id}</TableCell>

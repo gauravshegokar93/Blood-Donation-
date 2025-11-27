@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Doughnut } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -11,7 +11,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import type { Registration } from "@/lib/mock-data";
+import type { Registration } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Expand } from "lucide-react";
 
@@ -31,15 +31,15 @@ export default function BDC_StatusLocationPage() {
     const [location, setLocation] = useState<string | null>(null);
     const [registrations, setRegistrations] = useState<Registration[]>([]);
     const [stats, setStats] = useState<ReportStats>({ total: 0, accepted: 0, rejected: 0, pending: 0 });
+    const [isLoading, setIsLoading] = useState(true);
 
-    useEffect(() => {
-        const savedLocation = sessionStorage.getItem('bdcLocation');
-        if (!savedLocation) {
-            router.push('/');
-        } else {
-            setLocation(savedLocation);
-            const registrationKey = `registrations_${savedLocation}`;
-            const campRegistrations: Registration[] = JSON.parse(sessionStorage.getItem(registrationKey) || '[]');
+    const loadReportData = useCallback(async (loc: string) => {
+        setIsLoading(true);
+        try {
+            const response = await fetch(`/api/registrations?location=${loc}`);
+            if (!response.ok) throw new Error('Failed to load data');
+            const campRegistrations: Registration[] = await response.json();
+            
             setRegistrations(campRegistrations);
 
             const total = campRegistrations.length;
@@ -47,8 +47,24 @@ export default function BDC_StatusLocationPage() {
             const rejected = campRegistrations.filter(r => r.status === 'REJECTED').length;
             const pending = campRegistrations.filter(r => r.status === 'REGISTERED').length;
             setStats({ total, accepted, rejected, pending });
+
+        } catch (error) {
+            console.error(error);
+            alert('Failed to load report data.');
+        } finally {
+            setIsLoading(false);
         }
-    }, [router]);
+    }, []);
+
+    useEffect(() => {
+        const savedLocation = sessionStorage.getItem('bdcLocation');
+        if (!savedLocation) {
+            router.push('/');
+        } else {
+            setLocation(savedLocation);
+            loadReportData(savedLocation);
+        }
+    }, [router, loadReportData]);
 
     const chartOptions = {
         responsive: true,
@@ -146,24 +162,30 @@ export default function BDC_StatusLocationPage() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {registrations.map(reg => (
-                                            <TableRow key={reg.id}>
-                                                <TableCell>{reg.id}</TableCell>
-                                                <TableCell>{reg.name}</TableCell>
-                                                <TableCell>{reg.bloodGroup}</TableCell>
-                                                <TableCell>{reg.agency}</TableCell>
-                                                <TableCell>
-                                                    <span className={`font-semibold ${
-                                                        reg.status === 'ACCEPTED' ? 'text-green-600' :
-                                                        reg.status === 'REJECTED' ? 'text-red-600' :
-                                                        reg.status === 'REGISTERED' ? 'text-blue-600' :
-                                                        'text-yellow-600'
-                                                    }`}>
-                                                        {reg.status}
-                                                    </span>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
+                                        {isLoading ? (
+                                            <TableRow><TableCell colSpan={5} className="text-center">Loading...</TableCell></TableRow>
+                                        ) : registrations.length > 0 ? (
+                                            registrations.map(reg => (
+                                                <TableRow key={reg.id}>
+                                                    <TableCell>{reg.id}</TableCell>
+                                                    <TableCell>{reg.name}</TableCell>
+                                                    <TableCell>{reg.bloodGroup}</TableCell>
+                                                    <TableCell>{reg.agency}</TableCell>
+                                                    <TableCell>
+                                                        <span className={`font-semibold ${
+                                                            reg.status === 'ACCEPTED' ? 'text-green-600' :
+                                                            reg.status === 'REJECTED' ? 'text-red-600' :
+                                                            reg.status === 'REGISTERED' ? 'text-blue-600' :
+                                                            'text-yellow-600'
+                                                        }`}>
+                                                            {reg.status}
+                                                        </span>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        ) : (
+                                            <TableRow><TableCell colSpan={5} className="text-center">No registrations found.</TableCell></TableRow>
+                                        )}
                                     </TableBody>
                                 </Table>
                             </div>
