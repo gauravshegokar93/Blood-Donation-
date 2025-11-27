@@ -19,14 +19,14 @@ The system is architected as a single-page application (SPA) with a serverless b
 *   **UI Components**: [ShadCN UI](https://ui.shadcn.com/) - A collection of accessible and reusable components.
 *   **Styling**: [Tailwind CSS](https://tailwindcss.com/) for utility-first styling.
 *   **Charting**: [Chart.js](https://www.chartjs.org/) with `react-chartjs-2` for data visualization.
-*   **State Management**: React Hooks (`useState`, `useEffect`, `useCallback`) and `sessionStorage` for persisting session-specific data.
+*   **State Management**: React Hooks (`useState`, `useEffect`, `useCallback`) for managing component state. API calls using `fetch` for data retrieval and mutations.
 
 ### 2.2 Backend & Data Layer
 
-*   **Primary Data Store (Current)**: The application currently uses the browser's `sessionStorage` to simulate a multi-location database. All data (registrations, blood banks) is scoped to the location selected during login and is cleared when the session ends. This allows for rapid, offline-first development and testing.
-*   **API Layer**: A RESTful API is defined using Next.js API Routes (`src/app/api`). Although the frontend currently interfaces with `sessionStorage`, these API endpoints are built to connect to a persistent database like Microsoft SQL Server.
-    *   **Database Driver**: `mssql` library is included for future integration.
-    *   **Connection Logic**: The `src/lib/db.ts` file contains the configuration and connection pool logic for connecting to an SQL Server instance.
+*   **Database**: [Microsoft SQL Server](https://www.microsoft.com/en-us/sql-server). All application data, including registrations and blood banks, is stored in a persistent SQL database.
+*   **API Layer**: A RESTful API is built using Next.js API Routes (`src/app/api`). These endpoints serve as the bridge between the frontend application and the SQL Server database.
+    *   **Database Driver**: The `mssql` library is used to establish and manage the connection to the SQL Server instance.
+    *   **Connection Logic**: The `src/lib/db.ts` file contains the configuration and a connection pool for efficiently handling database queries.
 
 ### 2.3 Print Engine
 
@@ -41,10 +41,10 @@ The system features two distinct printing mechanisms:
 
 ### 3.1 Registration Module
 
-*   **Functionality**: Allows for creating, reading, updating, and deleting donor registrations for a specific camp location.
-*   **Unique ID Generation**: A unique, sequential registration ID is generated for each donor based on the camp location prefix (e.g., `PUN-0001`).
-*   **Data Validation**: Includes client-side validation for required fields like mobile number format.
-*   **Status Tracking**: Each registration has a status: `REGISTERED`, `ACCEPTED`, or `REJECTED`.
+*   **Functionality**: Allows for creating, reading, updating, and deleting donor registrations for a specific camp location via API calls to the SQL backend.
+*   **Unique ID Generation**: A unique, sequential registration ID is generated on the server for each new donor based on the camp location.
+*   **Data Validation**: Includes client-side validation for required fields like mobile number format, with primary validation occurring on the backend.
+*   **Status Tracking**: Each registration has a status: `REGISTERED`, `ACCEPTED`, or `REJECTED`, which is updated in the database.
 
 ### 3.2 Certificate Generator
 
@@ -60,16 +60,16 @@ The system features two distinct printing mechanisms:
 
 #### Admin Dashboard (`/dashboard`)
 
-*   **Scope**: Location-specific. Displays live data for the currently selected camp location.
+*   **Scope**: Location-specific. Displays live data for the currently selected camp location, fetched from the SQL database.
 *   **Key Metrics**: Shows total registrations, accepted donors, and rejected donors.
 *   **Visualizations**: Includes doughnut charts for Registration Status, Blood Group Distribution, and Registrations by Agency.
 *   **Recent Activity**: A list of the most recent registrations and their current status.
 
 #### Director's Dashboard (`/director`)
 
-*   **Scope**: Global. Provides an aggregated view of all camp locations.
+*   **Scope**: Global. Provides an aggregated view of all camp locations, with all data fetched from the SQL database.
 *   **BDC Status Report**: Displays a summary bar chart for each location, comparing total, accepted, and rejected registrations.
-*   **BDC History Report**: A trend chart showing total registrations year-over-year, combining historical data with live data for the current year.
+*   **BDC History Report**: A trend chart showing total registrations year-over-year, combining historical data with live data for the current year from the database.
 
 ### 3.4 Reports Module
 
@@ -79,8 +79,8 @@ The system features two distinct printing mechanisms:
 
 ### 3.5 Admin Panel
 
-*   **Blood Bank Management**: A CRUD interface to manage blood bank agencies, including their name, assigned counter number, and donation quota for the camp.
-*   **Acceptance/Rejection**: Simple interfaces to update a donor's status from `REGISTERED` to either `ACCEPTED` or `REJECTED`. The rejection module requires a reason.
+*   **Blood Bank Management**: A CRUD interface to manage blood bank agencies, including their name, assigned counter number, and donation quota for the camp. All operations are performed via API calls.
+*   **Acceptance/Rejection**: Simple interfaces to update a donor's status from `REGISTERED` to either `ACCEPTED` or `REJECTED` in the database. The rejection module requires a reason.
 *   **Certification**: A dedicated view to search for donors and generate their certificates.
 
 ---
@@ -127,7 +127,7 @@ The system features two distinct printing mechanisms:
 
 ## 5. Database Structure / Schema
 
-For future MS SQL Server integration, the following table schema is proposed.
+The MS SQL Server integration uses the following table schema.
 
 ```sql
 -- Stores information about each registered donor
@@ -171,17 +171,30 @@ CREATE TABLE HistoricalRegistrations (
 
 The API is defined in `src/app/api/`.
 
+### `/api/registrations`
+
+*   **`GET /api/registrations?location={location}`**
+    *   **Behavior**: Fetches all registrations for a specified location from the `Registrations` table.
+    *   **Output**: `NextResponse.json(Registration[])`
+*   **`POST /api/registrations`**
+    *   **Behavior**: Creates a new registration or updates an existing one in the `Registrations` table. If an `id` is provided, it's an update; otherwise, it's a creation, and a new sequential ID is generated.
+    *   **Input Body**: `Partial<Registration>`
+    *   **Output**: `NextResponse.json({ message: string, registrationId?: string })`
+*   **`DELETE /api/registrations?id={id}`**
+    *   **Behavior**: Deletes a registration from the `Registrations` table by its ID.
+    *   **Output**: `NextResponse.json({ message: string })`
+
 ### `/api/blood-banks`
 
 *   **`GET /api/blood-banks?location={location}`**
-    *   **Behavior**: Fetches all blood banks for a specified location.
+    *   **Behavior**: Fetches all blood banks for a specified location from the `BloodBanks` table.
     *   **Output**: `NextResponse.json(BloodBank[])`
 *   **`POST /api/blood-banks`**
-    *   **Behavior**: Creates a new blood bank or updates an existing one if an `id` is provided in the body.
+    *   **Behavior**: Creates a new blood bank or updates an existing one in the `BloodBanks` table.
     *   **Input Body**: `Partial<BloodBank>`
     *   **Output**: `NextResponse.json({ message: string })`
 *   **`DELETE /api/blood-banks?id={id}`**
-    *   **Behavior**: Deletes a blood bank by its ID.
+    *   **Behavior**: Deletes a blood bank from the `BloodBanks` table by its ID.
     *   **Output**: `NextResponse.json({ message: string })`
 
 ---
@@ -190,21 +203,21 @@ The API is defined in `src/app/api/`.
 
 ### 7.1 Key Screens & UI Workflow
 
-1.  **Login (`/`)**: User selects a camp location to start a session. This sets the `bdcLocation` in `sessionStorage` and initializes mock data if it's the first time for that session.
-2.  **Admin Dashboard (`/dashboard`)**: The central hub for camp admins. Displays key stats and provides navigation to all management modules (Registration, Blood Bank, etc.).
-3.  **Registration Page (`/dashboard/registration`)**: A form for adding new donors and a table displaying existing ones. Selecting a donor from the table populates the form for editing or deletion.
-4.  **Director's Dashboard (`/director`)**: A read-only view for high-level management, showing data aggregated across all locations and historical trends.
+1.  **Login (`/`)**: User selects a camp location to start a session. This sets the `bdcLocation` in `sessionStorage`, which is used in subsequent API calls.
+2.  **Admin Dashboard (`/dashboard`)**: The central hub for camp admins. Fetches and displays key stats and charts by calling the backend APIs.
+3.  **Registration Page (`/dashboard/registration`)**: A form for adding new donors and a table displaying existing ones. All CRUD operations are performed via `fetch` calls to `/api/registrations`.
+4.  **Director's Dashboard (`/director`)**: A read-only view for high-level management, fetching aggregated data from the backend APIs.
 
 ### 7.2 Dashboard Logic
 
-*   **Refresh Behavior**: The Admin Dashboard was initially static. It has been updated to include a `window.addEventListener('focus', ...)` in its `useEffect` hook. This ensures that whenever the user navigates away (e.g., to add a new donor) and returns to the dashboard tab, the `loadDashboardData` function is re-triggered, fetching the latest data from `sessionStorage` and updating all stats and charts.
+*   **Refresh Behavior**: The Admin Dashboard includes a `window.addEventListener('focus', ...)` in its `useEffect` hook. This ensures that whenever the user navigates away and returns, the dashboard data is re-fetched from the APIs, providing live updates.
 *   **Data Sources**:
-    *   **Admin Dashboard**: Reads directly from `sessionStorage` keys namespaced by location (e.g., `registrations_Pune`).
-    *   **Director's Dashboard**: Reads from `sessionStorage` for all defined locations to generate the live "BDC Status" report. For the "BDC History" report, it combines data from `src/lib/historical-data.ts` with live data from `sessionStorage` for the current year.
+    *   **Admin Dashboard**: Reads all data by making `fetch` requests to the `/api/registrations` and `/api/blood-banks` endpoints.
+    *   **Director's Dashboard**: Fetches data for all locations to generate the "BDC Status" report. For the "BDC History" report, it combines data from `src/lib/historical-data.ts` with live data fetched from the backend.
 
 ### 7.3 Certificate Logic
 
-*   **Background**: A high-resolution PNG (`/public/wadhokar-logo.png` is used as a logo, but the certificate itself implies a background image) serves as the static template.
+*   **Background**: A high-resolution PNG (`/public/wadhokar-logo.png`) is used as a logo, but the certificate itself implies a background image.
 *   **Data Overlay**: The `<Certificate />` component uses CSS `position: absolute` to place the donor's name, date, and event details at precise locations on top of the background.
 *   **Print Mode**:
     1.  The main application view has a class `print-hidden`.
@@ -226,7 +239,7 @@ The API is defined in `src/app/api/`.
 ### 7.5 Historical Data Logic
 
 *   **Data Loading**: The `historicalData` array is statically imported from `src/lib/historical-data.ts`.
-*   **Live Data Integration**: In `src/app/director/page.tsx`, the logic first processes the static `historicalData`. It then iterates through all live camp locations in `sessionStorage`, calculates the total registrations for the current year (`2026`), and overwrites the historical value for `2026` with this new live total. This ensures the trend chart always reflects the most current data.
+*   **Live Data Integration**: In `src/app/director/page.tsx`, the logic first processes the static `historicalData`. It then iterates through all defined locations, makes API calls to get the total live registrations for the current year, and overwrites the historical value for that year with this new live total.
 
 ---
 
@@ -254,3 +267,69 @@ The API is defined in `src/app/api/`.
 *   **Advanced Reporting**: Add more detailed reports, such as donor demographics, blood type availability trends, and camp performance comparisons. Allow for exporting reports to CSV or PDF.
 *   **Dockerization**: Create a `Dockerfile` to containerize the application for consistent deployments and easier setup.
 *   **Unit & Integration Testing**: Implement a testing suite using a framework like Jest and React Testing Library to ensure code quality and prevent regressions.
+
+---
+
+## SQL Migration: Full File Path Change List
+
+This section provides a complete list of file changes required to migrate the application from a `sessionStorage`-based mock backend to a full Microsoft SQL Server backend.
+
+### File Change Table
+
+| File Path | Action | Purpose of Change | Instructions |
+| :--- | :--- | :--- | :--- |
+| **Backend & API** | | | |
+| `src/app/api/registrations/route.ts`| **NEW** | Create a new API route for all Registration CRUD operations. | Implement GET, POST, DELETE methods to interact with the `Registrations` SQL table. |
+| `src/app/api/blood-banks/route.ts` | **UPDATE** | Connect existing API route to the SQL database. | Replace mock logic with `executeQuery` calls to the `BloodBanks` SQL table. |
+| `src/lib/db.ts` | **UPDATE** | Configure SQL Server connection details. | Add your database server, user, password, and database name to the config. |
+| `src/lib/mock-data.ts` | **DELETE** | Remove the mock data source and initialization logic. | This file is no longer needed as all data will come from the SQL database. |
+| **Frontend Components** | | | |
+| `src/app/dashboard/page.tsx` | **UPDATE** | Replace `sessionStorage` with API calls. | Refactor `loadDashboardData` to `fetch` from `/api/registrations` and `/api/blood-banks`. |
+| `src/app/dashboard/registration/page.tsx`| **UPDATE** | Replace all `sessionStorage` logic with API calls. | Change `loadDataForCamp`, `handleSaveRegistration`, and `handleDelete` to use `fetch`. |
+| `src/app/dashboard/blood-bank/page.tsx` | **UPDATE** | Replace all `sessionStorage` logic with API calls. | Change `loadBloodBanks`, `handleSave`, and `handleDelete` to use `fetch`. |
+| `src/app/dashboard/acceptance/page.tsx`| **UPDATE** | Replace `sessionStorage` with an API call. | Change `handleAccept` to make a POST request to `/api/registrations` to update the status. |
+| `src/app/dashboard/rejection/page.tsx` | **UPDATE** | Replace `sessionStorage` with an API call. | Change `handleReject` to make a POST request to `/api/registrations` to update the status. |
+| `src/app/dashboard/certification/page.tsx`| **UPDATE** | Replace `sessionStorage` with an API call. | Fetch donor data from `/api/registrations` for searching and printing. |
+| `src/app/director/page.tsx` | **UPDATE** | Replace `sessionStorage` with API calls. | Fetch live data for all locations by making multiple calls to the backend APIs. |
+| `src/app/page.tsx` | **UPDATE** | Remove mock data initialization. | The `handleStart` function should no longer call `initializeMockData`. |
+
+### Migration Guide
+
+**Step 1: Apply Backend File Changes**
+
+1.  **Create API Route:** Create the new file `src/app/api/registrations/route.ts` to handle registration data.
+2.  **Update API Route:** Modify `src/app/api/blood-banks/route.ts` to fetch data from the `BloodBanks` table in your SQL database instead of mock data.
+3.  **Delete Mock Data:** Remove the file `src/lib/mock-data.ts`. The `Registration` and `BloodBank` type definitions should be moved to a new types file (e.g., `src/lib/types.ts`).
+
+**Step 2: Update Frontend Components**
+
+1.  **Refactor Pages:** Go through each file listed in the table under "Frontend Components" (`dashboard/page.tsx`, `registration/page.tsx`, etc.).
+2.  **Remove `sessionStorage`:** Delete all code that reads from or writes to `sessionStorage` (e.g., `sessionStorage.getItem('registrations_...')`).
+3.  **Implement `fetch`:** Replace the deleted `sessionStorage` logic with `fetch` calls to your new API routes (`/api/registrations`, `/api/blood-banks`). Use `useState` and `useEffect` to manage the data received from the API.
+
+**Step 3: Update Environment Variables**
+
+1.  **Create `.env.local`:** If it doesn't exist, create a `.env.local` file in the root of your project.
+2.  **Add Credentials:** Add your SQL Server connection details to this file:
+    ```
+    DB_SERVER=your_server_address
+    DB_USER=your_username
+    DB_PASSWORD=your_password
+    DB_DATABASE=your_database_name
+    DB_OPTIONS_TRUSTSERVERCERTIFICATE=true
+    ```
+
+**Step 4: Test SQL Connectivity**
+
+1.  Run the application (`npm run dev`).
+2.  Navigate to a page that fetches data, like the Blood Bank management screen.
+3.  Verify that the data displayed is coming directly from your SQL database. Check the terminal for any connection error messages from `src/lib/db.ts`.
+
+**Step 5: Verify All Routes**
+
+1.  **Test CRUD Operations:** Systematically test every feature:
+    *   Create, edit, and delete a blood bank.
+    *   Create, edit, and delete a donor registration.
+    *   Accept and reject a donor.
+    *   Generate a certificate.
+2.  **Check Dashboards:** Ensure both the Admin and Director dashboards display the correct aggregated data from the SQL backend.
