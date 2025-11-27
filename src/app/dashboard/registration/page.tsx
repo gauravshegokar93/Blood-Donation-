@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -65,7 +66,7 @@ export default function RegistrationPage() {
 
             setAgencies(campAgencies);
 
-            const limit = campAgencies.reduce((sum, bank) => sum + bank.quota, 0);
+            const limit = campAgencies.reduce((sum, bank) => sum + (bank.quota || 0), 0);
             const campAccepted = campRegistrations.filter(r => r.status === 'ACCEPTED').length;
             setStats({ accepted: campAccepted, limit: limit });
             

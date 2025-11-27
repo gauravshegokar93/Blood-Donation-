@@ -1,3 +1,4 @@
+
 # Blood Donation Camp Management System - Technical Documentation
 
 ## 1. Project Overview
@@ -279,10 +280,9 @@ This section provides a complete list of file changes required to migrate the ap
 | File Path | Action | Purpose of Change | Instructions |
 | :--- | :--- | :--- | :--- |
 | **Backend & API** | | | |
-| `src/app/api/registrations/route.ts`| **NEW** | Create a new API route for all Registration CRUD operations. | Implement GET, POST, DELETE methods to interact with the `Registrations` SQL table. |
+| `src/app/api/registrations/route.ts`| **UPDATE** | Connect existing API route to the SQL database. | Replace mock logic with `executeQuery` calls to the `Registrations` SQL table for all CRUD ops. |
 | `src/app/api/blood-banks/route.ts` | **UPDATE** | Connect existing API route to the SQL database. | Replace mock logic with `executeQuery` calls to the `BloodBanks` SQL table. |
 | `src/lib/db.ts` | **UPDATE** | Configure SQL Server connection details. | Add your database server, user, password, and database name to the config. |
-| `src/lib/mock-data.ts` | **DELETE** | Remove the mock data source and initialization logic. | This file is no longer needed as all data will come from the SQL database. |
 | **Frontend Components** | | | |
 | `src/app/dashboard/page.tsx` | **UPDATE** | Replace `sessionStorage` with API calls. | Refactor `loadDashboardData` to `fetch` from `/api/registrations` and `/api/blood-banks`. |
 | `src/app/dashboard/registration/page.tsx`| **UPDATE** | Replace all `sessionStorage` logic with API calls. | Change `loadDataForCamp`, `handleSaveRegistration`, and `handleDelete` to use `fetch`. |
@@ -291,21 +291,24 @@ This section provides a complete list of file changes required to migrate the ap
 | `src/app/dashboard/rejection/page.tsx` | **UPDATE** | Replace `sessionStorage` with an API call. | Change `handleReject` to make a POST request to `/api/registrations` to update the status. |
 | `src/app/dashboard/certification/page.tsx`| **UPDATE** | Replace `sessionStorage` with an API call. | Fetch donor data from `/api/registrations` for searching and printing. |
 | `src/app/director/page.tsx` | **UPDATE** | Replace `sessionStorage` with API calls. | Fetch live data for all locations by making multiple calls to the backend APIs. |
-| `src/app/page.tsx` | **UPDATE** | Remove mock data initialization. | The `handleStart` function should no longer call `initializeMockData`. |
+| `src/app/page.tsx` | **UPDATE** | Remove mock data initialization. | The `handleStart` function should no longer call mock data initializers. |
+| `src/app/chart/page.tsx` | **UPDATE** | Remove dependency on `sessionStorage` for chart data transfer. | Keep using `sessionStorage` for now as it's a simple way to pass data to a new window. |
+| `src/app/dashboard/reports/status-location/page.tsx` | **UPDATE** | Replace `sessionStorage` with API calls. | Fetch live data for the selected location by making a call to the backend API. |
+
 
 ### Migration Guide
 
 **Step 1: Apply Backend File Changes**
 
-1.  **Create API Route:** Create the new file `src/app/api/registrations/route.ts` to handle registration data.
-2.  **Update API Route:** Modify `src/app/api/blood-banks/route.ts` to fetch data from the `BloodBanks` table in your SQL database instead of mock data.
-3.  **Delete Mock Data:** Remove the file `src/lib/mock-data.ts`. The `Registration` and `BloodBank` type definitions should be moved to a new types file (e.g., `src/lib/types.ts`).
+1.  **Update API Route:** Modify `src/app/api/registrations/route.ts` to handle registration data from the SQL database.
+2.  **Update API Route:** Modify `src/app/api/blood-banks/route.ts` to fetch data from the `BloodBanks` table in your SQL database.
+3.  **Configure Database:** Update the connection details in `src/lib/db.ts` to point to your SQL Server instance.
 
 **Step 2: Update Frontend Components**
 
 1.  **Refactor Pages:** Go through each file listed in the table under "Frontend Components" (`dashboard/page.tsx`, `registration/page.tsx`, etc.).
-2.  **Remove `sessionStorage`:** Delete all code that reads from or writes to `sessionStorage` (e.g., `sessionStorage.getItem('registrations_...')`).
-3.  **Implement `fetch`:** Replace the deleted `sessionStorage` logic with `fetch` calls to your new API routes (`/api/registrations`, `/api/blood-banks`). Use `useState` and `useEffect` to manage the data received from the API.
+2.  **Remove `sessionStorage` (where applicable):** Delete code that reads from or writes to `sessionStorage` for application data. Keep it for session management (`bdcLocation`).
+3.  **Implement `fetch`:** Replace the deleted data logic with `fetch` calls to your new API routes (`/api/registrations`, `/api/blood-banks`). Use `useState` and `useEffect` to manage the data received from the API.
 
 **Step 3: Update Environment Variables**
 

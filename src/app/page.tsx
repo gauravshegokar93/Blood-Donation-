@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -77,7 +78,7 @@ export default function SessionStartPage() {
                     className="flex h-10 w-full rounded-md border border-input bg-gray-100 px-3 py-2 text-sm ring-offset-background"
                  />
               </div>
-              <Button onClick={handleStart} className="w-full bg-primary hover:bg-red-700" disabled={isLoading}>
+              <Button onClick={handleStart} className="w-full bg-primary hover:bg-red-700" disabled={isLoading || !location}>
                 {isLoading ? 'Loading...' : 'Start'}
               </Button>
             </div>
