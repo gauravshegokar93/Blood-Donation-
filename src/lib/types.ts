@@ -23,3 +23,8 @@ export interface Registration {
     age?: number;
     createdAt: string; 
 }
+
+export interface HistoricalData {
+    campYear: string;
+    totalRegistrations: number;
+}

@@ -5,8 +5,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Droplets, LogOut, Expand } from 'lucide-react';
-import { Registration } from '@/lib/types';
-import { historicalData as staticHistoricalData, HistoricalData } from '@/lib/historical-data';
+import { Registration, HistoricalData } from '@/lib/types';
+import { historicalData as staticHistoricalData } from '@/lib/historical-data';
 import { YearlyTrendChart } from '@/components/director-charts';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -318,4 +318,3 @@ export default function DirectorPage() {
     );
 }
 
-    

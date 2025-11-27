@@ -1,8 +1,5 @@
 
-export interface HistoricalData {
-    campYear: string;
-    totalRegistrations: number;
-}
+import type { HistoricalData } from '@/lib/types';
 
 // Data based on the provided user input, sorted by year.
 export const historicalData: HistoricalData[] = [
