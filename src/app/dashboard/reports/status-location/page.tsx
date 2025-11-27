@@ -211,3 +211,5 @@ export default function BDC_StatusLocationPage() {
         </div>
     );
 }
+
+    
